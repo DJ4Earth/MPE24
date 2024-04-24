@@ -12,7 +12,7 @@ begin
 end
 
 # ╔═╡ 47d2e93e-096d-4983-99ab-f138fd0057d8
-using dJUICE
+using DJUICE
 
 # ╔═╡ bd86b569-aabc-43da-9802-ac531d28a591
 md"""
@@ -25,10 +25,10 @@ This is an example of velocity computation in steady state for a square ice shel
 md"""
 ## Install the package
 
-To use this tutorial one need to install `dJUICE` using the following commands:
+To use this tutorial one need to install `DJUICE` using the following commands:
 
 ```julia
-]add https://github.com/DJ4Earth/dJUICE.jl
+]add https://github.com/DJ4Earth/DJUICE.jl
 ```
 
 or use `Pkg` to import from `Project.toml`"""
@@ -63,7 +63,7 @@ md"""## Generate Mesh
 
 Use `md=triangle(md,domainname,resolution)` to generate an unstructured triangular mesh based on the domain outline defined in the file `domainname`, with a characteristic length `resolution` for the mesh.
 
-We start with a square domain of $[0, 10^6]\times[0,10^6]$ with $5\times10^3~$ mesh resolution, all the units are in meters. Indeed, in `dJUICE` we use [SI](https://en.wikipedia.org/wiki/International_System_of_Units) unit system.
+We start with a square domain of $[0, 10^6]\times[0,10^6]$ with $5\times10^3~$ mesh resolution, all the units are in meters. Indeed, in `DJUICE` we use [SI](https://en.wikipedia.org/wiki/International_System_of_Units) unit system.
 
 Then, we set the whole domain to be ice covered, as an ice shelf.
 """
