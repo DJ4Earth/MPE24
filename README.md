@@ -1,6 +1,6 @@
 ## SIAM Conference on Mathematics of Planet Earth (MPE24): Material for minitutorials
 
-### Differentiable Programming in Julia with Enzyme
+### MT1: Differentiable Programming in Julia with Enzyme
 Tuesday, June 11, 10:00 AM - 12:00 PM, Grand II - Ballroom Level
 
   - Valentin Churavy, Massachusetts Institute of Technology, U.S.
@@ -11,7 +11,7 @@ We will demonstrate the differentiable programming paradigm in Julia. We will in
 
 This session is co-authored by Sri HariKrishna Narayanan and Jan Hückelheim, Argonne National Laboratory, U.S.
 
-### Differentiable Earth System Models in Julia
+### MT2: Differentiable Earth System Models in Julia
 Tuesday, June 11, 2:45 PM - 4:45 PM, Grand II - Ballroom Level
 
   - Joseph L. Kump, University of Texas, U.S.
