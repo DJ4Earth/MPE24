@@ -1,0 +1,4 @@
+[deps]
+ClimaSeaIce = "6ba0ff68-24e6-4315-936c-2e99227c95a4"
+Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
+Oceananigans = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
