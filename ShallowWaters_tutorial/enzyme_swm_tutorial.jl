@@ -77,9 +77,12 @@ Prog = run_model(
     Ndays = 365
     );
 
+# ╔═╡ 2fdd2dae-57da-4789-a5a0-a74096dba40a
+
+
 # ╔═╡ ce70a9ca-96b0-4096-9873-a7de36472e9f
 md"""
-After it's run we see something like above which provides some feedback on the integration process. The function run_model returns to us a structure containing the prognostic variables ($u$, $v$, and $\eta$). Let's plot $u$ and $\eta$:
+After it's run we see something like above which provides some feedback on the integration process. The function run_model returns to us a structure containing the prognostic variables ($u$, $v$, and $\eta$). Let's plot them:
 """
 
 # ╔═╡ 66860986-32bc-40b8-9b7a-7bc80bf530f2
@@ -94,14 +97,14 @@ heatmap(LinRange(0, 3840, 127),
 	ylabel="y (km)"
 )
 
-# ╔═╡ fc0ced65-50a6-48df-ad9e-2ce7a22cea26
+# ╔═╡ d9778372-b83f-45bb-bfc4-42957b7bc113
 heatmap(LinRange(0, 3840, 128),
 	LinRange(0, 3840, 128),
 	Prog.η',
 	c=:balance,
-	clim=(-5, 5),
+	clim=(-abs(maximum(Prog.η)), abs(maximum(Prog.η))),
 	colorbar_title="m",
-	title="Sea surface displacement",
+	title="Sea-surface displacement",
 	xlabel="x (km)",
 	ylabel="y (km)"
 )
@@ -545,6 +548,9 @@ begin
 	
 end
 
+# ╔═╡ 464420e7-6ee5-4770-9300-cfc2c2b0af81
+maximum(derivs.u)
+
 # ╔═╡ e74aa3aa-b4e8-4065-ac24-14f650a08db4
 md"""
 Let's now look at a derivative we found:
@@ -565,7 +571,7 @@ title=("∂J / ∂u(t_0)")
 md"""
 From initial inspection we immediately note that this derivative is mostly zero, which actually tells us something about the problem setup.
 
-We started everything from rest, and only integrated for 30 days. As one could guess, oceans take much longer to see meaningful changes. So, in short, this derivative doesn't have a whole lot of insight, it's exactly saying that we haven't done enough to really know how sensitive $J$ is to the initial conditions.
+We started everything from rest, and only integrated for 30 days. As one could guess, oceans take much longer to see meaningful changes. So, in short, this derivative doesn't have a whole lot of insight, it's exactly saying that $J$ is not very sensitive to $u(t_0)$.
 """
 
 # ╔═╡ b7db1f77-89f9-4c3c-8699-0986ffd7dc8c
@@ -615,6 +621,20 @@ begin
 	derivs2 = ShallowWaters.PrognosticVars{Float32}(ShallowWaters.remove_halo(dS2.Prog.u,dS2.Prog.v,dS2.Prog.η,dS2.Prog.sst, dS2)...);
 
 end
+
+# ╔═╡ d95f05c7-be27-42cf-a3a5-3f002fad44cd
+heatmap(LinRange(0, 3840, 127),
+LinRange(0,3840, 128),
+derivs2.u', 
+c=:balance,
+clim=(-abs(maximum(derivs2.u)),abs(maximum(derivs2.u))),
+xlabel=("x (km)"),
+ylabel=("y (km)"),
+title=("∂J / ∂u(t_0)")
+)
+
+# ╔═╡ de99d266-70da-4da2-ab94-2c8c13771a97
+
 
 # ╔═╡ e5c3c17b-14c1-4433-a421-b5c8dc6a6cde
 md"""
@@ -697,6 +717,9 @@ end
 
 # ╔═╡ a38d4da3-79f4-432e-8fa0-0910994da68d
 diffs, enzyme_deriv
+
+# ╔═╡ fc49ac5e-2e6b-49af-abf1-4156111b387e
+plot(steps, diffs)/
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2098,9 +2121,10 @@ version = "1.4.1+1"
 # ╠═b2be01ce-56a5-448b-bb5e-f5488da55919
 # ╟─962793f9-6335-4c2d-8e9f-55291758ce90
 # ╠═23e555c6-6948-4c38-9893-fd813456a6e3
+# ╠═2fdd2dae-57da-4789-a5a0-a74096dba40a
 # ╟─ce70a9ca-96b0-4096-9873-a7de36472e9f
 # ╟─66860986-32bc-40b8-9b7a-7bc80bf530f2
-# ╟─fc0ced65-50a6-48df-ad9e-2ce7a22cea26
+# ╟─d9778372-b83f-45bb-bfc4-42957b7bc113
 # ╟─4a5d2113-fb96-4e68-aeff-326934afb7ca
 # ╟─9bcfb1ea-d58d-4e89-b4b3-d1182ccad389
 # ╠═1c85594d-707d-4496-861b-4faee4d9d395
@@ -2116,15 +2140,19 @@ version = "1.4.1+1"
 # ╟─237001ca-5ddd-47b9-abdc-bfdb229e741c
 # ╟─64be2a15-ddc7-4c85-b412-d84091910971
 # ╠═eec46495-ba5b-475f-8ed8-4d6e2dd2a24a
+# ╠═464420e7-6ee5-4770-9300-cfc2c2b0af81
 # ╟─e74aa3aa-b4e8-4065-ac24-14f650a08db4
 # ╠═a744a4da-b533-42c6-a965-6d916f0cf4e0
 # ╟─30d019fb-8b0b-44ee-8071-fece08e77095
 # ╟─b7db1f77-89f9-4c3c-8699-0986ffd7dc8c
 # ╟─a3297c2c-d814-4d80-a559-c2ff27333fe8
 # ╠═deda080d-e0ce-4c89-8e36-7723a92055db
+# ╠═d95f05c7-be27-42cf-a3a5-3f002fad44cd
+# ╠═de99d266-70da-4da2-ab94-2c8c13771a97
 # ╟─e5c3c17b-14c1-4433-a421-b5c8dc6a6cde
 # ╟─54d64921-c416-4395-b984-ae1e15a50154
 # ╠═698706e6-e820-469a-9ed4-f48751aa075e
 # ╠═a38d4da3-79f4-432e-8fa0-0910994da68d
+# ╠═fc49ac5e-2e6b-49af-abf1-4156111b387e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
