@@ -18,20 +18,27 @@ using DJUICE#main
 md"""
 # Basics of DJUICE: A square ice shelf
 
-This is an example of velocity computation in a steady state for a square ice shelf. We follow the tutorial for the ice-sheet and Sea-level System Model (ISSM): [https://issm.jpl.nasa.gov/documentation/tutorials/squareiceshelf/](https://issm.jpl.nasa.gov/documentation/tutorials/squareiceshelf/), which is the C++ version of ice sheet model.
+This tutorial demonstrates how to compute the velocity field of a steady-state square ice shelf using the Differentiable Julia ICE (DJUICE) model. We follow the approach outlined in the Ice-Sheet and Sea-Level System Model (ISSM) tutorial, adapted from its original C++ implementation to Julia. The original ISSM tutorial can be found [here](https://issm.jpl.nasa.gov/documentation/tutorials/squareiceshelf/).
 """
 
 # ╔═╡ deb25c09-55a6-4b95-a2ca-b90845d3806b
 md"""
 ## Install the package
 
-To use this tutorial, one needs to install the package [`DJUICE`](https://github.com/DJ4Earth/DJUICE.jl) using the following commands:
+To follow this tutorial, you need to install the [`DJUICE`](https://github.com/DJ4Earth/DJUICE.jl) package. DJUICE is available on Julia package registry, and you can install it directly from the repository.
 
+
+### Option 1: Using the Julia Package Manager
+1. Open your Julia REPL.
+2. Enter the package manager mode by pressing `]`.
+3. Run the following command to add DJUICE from the main branch of the repository:
 ```julia
 ]add DJUICE#main
 ```
 
-or use `Pkg` to import from `Project.toml`"""
+### Option 2: Using `Pkg` 
+Use `Pkg` to instantiate the environment and install the dependencies in `Project.toml` from the mini-tutorial.
+"""
 
 # ╔═╡ 95641af7-1cbf-4a43-84ea-be40ca4a0acc
 md"""
@@ -43,7 +50,10 @@ md"""
 ## Initialize the model
 
 
-All the data belonging to a model (geometry, node coordinates, results, etc.) is held in the same object `Model`. This will create a new model named `md` whose `struct` is `Model`. The information contained in the model `md` is grouped by `struct`, that contain fields related to a particular aspect of the model (e.g. mesh, ice geometry, material properties, friction, stressbalance solution, results of the runs, etc.). When one creates a new model, all these fields are initialized, and ready to be used as a `DJUICE` model. The list of these classes is displayed by running:
+All the data belonging to a model (geometry, node coordinates, results, etc.) is held in the single object `Model`. This will create a new model named `md` whose `struct` is `DJUICE.Model`. The information contained in the model `md` is grouped by `struct`, that contain fields related to a particular aspect of the model (e.g. mesh, ice geometry, material properties, friction, stressbalance solution, results of the runs, etc.). When one creates a new model, all these fields are initialized, and ready to be used as a `DJUICE` model. 
+
+
+To create a new model, use the following command. This command initializes the `md` object, setting up the model structure with all necessary fields.
 
 """
 
