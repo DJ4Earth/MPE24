@@ -31,7 +31,7 @@ begin
 
 	using KernelAbstractions
 
-	include("./ice_ocean_model.jl")
+	include("./ice_ocean_interaction.jl")
 
 	Enzyme.API.runtimeActivity!(true)
 	Enzyme.API.looseTypeAnalysis!(true)
