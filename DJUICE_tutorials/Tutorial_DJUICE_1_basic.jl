@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.41
+# v0.19.42
 
 using Markdown
 using InteractiveUtils
@@ -12,23 +12,23 @@ begin
 end
 
 # ╔═╡ 47d2e93e-096d-4983-99ab-f138fd0057d8
-using DJUICE
+using DJUICE#main
 
 # ╔═╡ bd86b569-aabc-43da-9802-ac531d28a591
 md"""
-# Square ice shelf tutorial
+# Basics of DJUICE: A square ice shelf
 
-This is an example of velocity computation in steady state for a square ice shelf. We follow the tutorial as in the ice-sheet and Sea-level System Model (ISSM): [https://issm.jpl.nasa.gov/documentation/tutorials/squareiceshelf/](https://issm.jpl.nasa.gov/documentation/tutorials/squareiceshelf/), which is the C++ version of ice sheet model.
+This is an example of velocity computation in a steady state for a square ice shelf. We follow the tutorial for the ice-sheet and Sea-level System Model (ISSM): [https://issm.jpl.nasa.gov/documentation/tutorials/squareiceshelf/](https://issm.jpl.nasa.gov/documentation/tutorials/squareiceshelf/), which is the C++ version of ice sheet model.
 """
 
 # ╔═╡ deb25c09-55a6-4b95-a2ca-b90845d3806b
 md"""
 ## Install the package
 
-To use this tutorial one need to install `DJUICE` using the following commands:
+To use this tutorial, one needs to install the package [`DJUICE`](https://github.com/DJ4Earth/DJUICE.jl) using the following commands:
 
 ```julia
-]add https://github.com/DJ4Earth/DJUICE.jl
+]add DJUICE#main
 ```
 
 or use `Pkg` to import from `Project.toml`"""
@@ -43,20 +43,14 @@ md"""
 ## Initialize the model
 
 
-All the data belonging to a model (geometry, node coordinates, results, etc.) is held in the same object `Model`. To create a new model, one can use the following command:
+All the data belonging to a model (geometry, node coordinates, results, etc.) is held in the same object `Model`. This will create a new model named `md` whose `struct` is `Model`. The information contained in the model `md` is grouped by `struct`, that contain fields related to a particular aspect of the model (e.g. mesh, ice geometry, material properties, friction, stressbalance solution, results of the runs, etc.). When one creates a new model, all these fields are initialized, and ready to be used as a `DJUICE` model. The list of these classes is displayed by running:
+
 """
 
 # ╔═╡ e19d512d-0a02-4e30-a06c-4ffd2576dd4b
 begin
-	md0 = model()
+	model()
 end
-
-# ╔═╡ cc64ebfb-33d2-4336-acd6-c0f18d292359
-md"""
-This will create a new model named `md` whose `struct` is `Model`. The information contained in the model `md` are grouped by `struct`, that contain fields related to a particular aspect of the model (e.g. mesh, ice geometry, material properties, friction, stressbalance solution, results of the runs, etc.). When one creates a new model, all these fields are empty, but `md` is ready to be used as a model. The list of these classes is displayed by running:"""
-
-# ╔═╡ 2c5b75ee-6b99-4c8b-9a44-0cd005d56b44
-md0
 
 # ╔═╡ 246e4613-f7c5-4fc0-bee0-33fb521d189d
 md"""## Generate Mesh
@@ -65,7 +59,7 @@ Use `md=triangle(md,domainname,resolution)` to generate an unstructured triangul
 
 We start with a square domain of $[0, 10^6]\times[0,10^6]$ with $5\times10^3~$ mesh resolution, all the units are in meters. Indeed, in `DJUICE` we use [SI](https://en.wikipedia.org/wiki/International_System_of_Units) unit system.
 
-Then, we set the whole domain to be ice covered, as an ice shelf.
+Then, we set the whole domain to be ice-covered, as an ice shelf.
 """
 
 # ╔═╡ 1bf7fb45-de6e-4227-917c-7d8bd2738479
@@ -203,9 +197,9 @@ end;
 md"""
 ## Boundary conditions
 
-Let's set the left, bottom, right boundaries to be Dirichlet boundary, and the top bondary to be a calving front boundary. In `dJUICE`, the calving front boundary is automatically determined by the 0-levelset contour of `md.mask.ice_levelset`, which are the nodes inside the polygon defined in `./test/Exp/SquareFront.exp`.
+Let's set the left, bottom, right boundaries to be Dirichlet boundary, and the top boundary to be a calving front boundary. In `dJUICE`, the calving front boundary is automatically determined by the 0-levelset contour of `md.mask.ice_levelset`, which are the nodes inside the polygon defined in `./test/Exp/SquareFront.exp`.
 
-The Dirichelt boundaries are the rest boundaries of the domain, by setting the values in `md.stressbalance.spcvx` and `md.stressbalance.spcvy`.
+The Dirichlet boundaries are the rest of the boundaries of the domain, by setting the values in `md.stressbalance.spcvx` and `md.stressbalance.spcvy`.
 """
 
 # ╔═╡ 4cb62901-cf99-4e60-b778-658f7027b7c8
@@ -270,8 +264,6 @@ plotmodel(md, md.results["StressbalanceSolution"]["Vel"])
 # ╠═47d2e93e-096d-4983-99ab-f138fd0057d8
 # ╟─2c3fc78b-595b-40d0-a16d-6058e76d5bb1
 # ╠═e19d512d-0a02-4e30-a06c-4ffd2576dd4b
-# ╟─cc64ebfb-33d2-4336-acd6-c0f18d292359
-# ╠═2c5b75ee-6b99-4c8b-9a44-0cd005d56b44
 # ╟─246e4613-f7c5-4fc0-bee0-33fb521d189d
 # ╠═1bf7fb45-de6e-4227-917c-7d8bd2738479
 # ╟─416c8beb-b4b7-4a15-8584-a86fd8461aac
