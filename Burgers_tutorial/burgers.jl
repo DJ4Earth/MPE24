@@ -35,6 +35,13 @@ function final_energy(burgers::Burgers)
     return energy(burgers)
 end
 
+function final_energy_chk!(burgers::Burgers, scheme)
+    @checkpoint_struct scheme burgers for i = 1:burgers.tsteps
+        advance!(burgers)
+    end
+    return energy(burgers)
+end
+
 function advance!(burgers::Burgers)
     stencil!(burgers)
     # set_bc!(burgers)
@@ -199,9 +206,8 @@ function burgers_adjoint(
         set_bc!(burgers)
         set_ic!(burgers)
         dburgers = Enzyme.make_zero(deepcopy(burgers))
-        ret =
-            autodiff(ReverseWithPrimal, final_energy, Active, Duplicated(burgers, dburgers))
-        # ret = autodiff(ReverseWithPrimal, final_energy, Active, Duplicated(burgers, dburgers), Const(revolve))
+        ret = autodiff(ReverseWithPrimal, final_energy, Active, Duplicated(burgers, dburgers))
+        # ret = autodiff(ReverseWithPrimal, final_energy_chk!, Active, Duplicated(burgers, dburgers), Const(revolve))
         @show ret
     end
 
@@ -225,7 +231,7 @@ function main(backend)
     dy = 1e-1
     dt = 1e-3 # dt < 0.5 * dx^2
 
-    snaps = 2
+    snaps = 100
     println(
         "Running Burgers with Nx = $Nx, Ny = $Ny, tsteps = $tsteps, μ = $μ, dx = $dx, dy = $dy, dt = $dt, snaps = $snaps",
     )
