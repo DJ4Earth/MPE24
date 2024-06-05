@@ -5,7 +5,7 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ b2be01ce-56a5-448b-bb5e-f5488da55919
-using ShallowWaters, Plots
+using ShallowWaters, Plots, PlutoUI
 
 # ╔═╡ 1c85594d-707d-4496-861b-4faee4d9d395
 begin
@@ -18,6 +18,9 @@ using Parameters
 # ╔═╡ d89aabcc-b39c-4f8b-8a73-5c4349c29b81
 md"# Adjoint derivatives tutorial: A shallow water model
 "
+
+# ╔═╡ 014028b7-7c27-4adb-9b0b-41129ff32ba7
+LocalResource("./images/smaller_rel_vor_060524.png")
 
 # ╔═╡ 61cb02eb-2dd4-4033-a294-888a8f514ad4
 md"In this tutorial we aim to demonstrate to users how one can use Enzyme + Checkpointing in Julia to compute derivatives of a shallow water model and provide physical interpretations of the computed derivatives. "
@@ -51,6 +54,9 @@ with the model parameters defined as:
 \end{align}
 ```
 """
+
+# ╔═╡ e4ff1dd6-a3ac-4ca2-bc3a-dd11e4c43783
+LocalResource("./images/barotropic_gyre_1.png")
 
 # ╔═╡ fb092f38-27a8-4fe1-9592-b77ccb1ec84b
 md"""
@@ -109,8 +115,14 @@ heatmap(LinRange(0, 3840, 128),
 	ylabel="y (km)"
 )
 
+# ╔═╡ 460f3b31-b908-484b-b730-aed64f681248
+
+
 # ╔═╡ 4a5d2113-fb96-4e68-aeff-326934afb7ca
 md"## Setting up Enzyme and Checkpointing"
+
+# ╔═╡ f45b40ed-1ab5-4e69-a890-164c58611ff8
+LocalResource("./images/checkpointing.png")
 
 # ╔═╡ 9bcfb1ea-d58d-4e89-b4b3-d1182ccad389
 md"""
@@ -571,7 +583,7 @@ title=("∂J / ∂u(t_0)")
 md"""
 From initial inspection we immediately note that this derivative is mostly zero, which actually tells us something about the problem setup.
 
-We started everything from rest, and only integrated for 30 days. As one could guess, oceans take much longer to see meaningful changes. So, in short, this derivative doesn't have a whole lot of insight, it's exactly saying that $J$ is not very sensitive to $u(t_0)$.
+We started everything from rest, and only integrated for 30 days. As one could guess, oceans take much longer to see meaningful changes. So, in short, this derivative doesn't have a whole lot of insight, it's just saying that $J$ is not very sensitive to $u(t_0)$.
 """
 
 # ╔═╡ b7db1f77-89f9-4c3c-8699-0986ffd7dc8c
@@ -715,11 +727,13 @@ begin
 
 end
 
+# ╔═╡ c85f59d1-794f-4ce9-affc-eec5a2381a65
+md"""
+Then we can look at the values found through finite differences (`diffs`) and compare to the derivative Enzyme computed:
+"""
+
 # ╔═╡ a38d4da3-79f4-432e-8fa0-0910994da68d
 diffs, enzyme_deriv
-
-# ╔═╡ fc49ac5e-2e6b-49af-abf1-4156111b387e
-plot(steps, diffs)/
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -728,6 +742,7 @@ Checkpointing = "eb46d486-4f9c-4c3d-b445-a617f2a2f1ca"
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 ShallowWaters = "56019723-2d87-4a65-81ff-59d5d8913e3c"
 
 [compat]
@@ -735,6 +750,7 @@ Checkpointing = "~0.9.3"
 Enzyme = "~0.12.2"
 Parameters = "~0.12.3"
 Plots = "~1.40.4"
+PlutoUI = "~0.7.59"
 ShallowWaters = "~0.5.3"
 """
 
@@ -744,7 +760,13 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "e705f68e132273476b7e8124ecfd9dde5112c1aa"
+project_hash = "e3ce1c8483c4beec2e4cee424e1833a4835216fe"
+
+[[deps.AbstractPlutoDingetjes]]
+deps = ["Pkg"]
+git-tree-sha1 = "6e1d2a35f2f90a4bc7c2ed98079b2ba09c35b83a"
+uuid = "6e696c72-6542-2067-7265-42206c756150"
+version = "1.3.2"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -1112,6 +1134,24 @@ git-tree-sha1 = "ca0f6bf568b4bfc807e7537f081c81e35ceca114"
 uuid = "e33a78d0-f292-5ffc-b300-72abe9b543c8"
 version = "2.10.0+0"
 
+[[deps.Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "179267cfa5e712760cd43dcae385d7ea90cc25a4"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.5"
+
+[[deps.HypertextLiteral]]
+deps = ["Tricks"]
+git-tree-sha1 = "7134810b1afce04bbc1045ca1985fbe81ce17653"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.5"
+
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "8b72179abc660bfab5e28472e019392b97d0985c"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.4"
+
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -1306,9 +1346,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LogExpFunctions]]
 deps = ["DocStringExtensions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "18144f3e9cbe9b15b070288eef858f71b291ce37"
+git-tree-sha1 = "a2d09619db4e765091ee5c6ffe8872849de0feea"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.27"
+version = "0.3.28"
 
     [deps.LogExpFunctions.extensions]
     LogExpFunctionsChainRulesCoreExt = "ChainRulesCore"
@@ -1334,6 +1374,11 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "6c26c5e8a4203d43b5497be3ec5d4e0c3cde240a"
 uuid = "5ced341a-0733-55b8-9ab6-a4889d929147"
 version = "1.9.4+0"
+
+[[deps.MIMEs]]
+git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
+uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
+version = "0.1.4"
 
 [[deps.MPICH_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Hwloc_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "MPIPreferences", "TOML"]
@@ -1557,6 +1602,12 @@ version = "1.40.4"
     ImageInTerminal = "d8c32880-2388-543b-8c61-d9f865259254"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
+[[deps.PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
+git-tree-sha1 = "ab55ee1510ad2af0ff674dbcced5e94921f867a9"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.59"
+
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
 git-tree-sha1 = "5aa36f7049a63a1528fe8f7c3f2113413ffd4e1f"
@@ -1746,13 +1797,18 @@ uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 version = "0.5.24"
 
 [[deps.TranscodingStreams]]
-git-tree-sha1 = "5d54d076465da49d6746c647022f3b3674e64156"
+git-tree-sha1 = "a947ea21087caba0a798c5e494d0bb78e3a1a3a0"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
-version = "0.10.8"
+version = "0.10.9"
 weakdeps = ["Random", "Test"]
 
     [deps.TranscodingStreams.extensions]
     TestExt = ["Test", "Random"]
+
+[[deps.Tricks]]
+git-tree-sha1 = "eae1bb484cd63b36999ee58be2de6c178105112f"
+uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
+version = "0.1.8"
 
 [[deps.URIs]]
 git-tree-sha1 = "67db6cc7b3821e19ebe75791a9dd19c9b1188f2b"
@@ -2113,10 +2169,12 @@ version = "1.4.1+1"
 
 # ╔═╡ Cell order:
 # ╟─d89aabcc-b39c-4f8b-8a73-5c4349c29b81
+# ╟─014028b7-7c27-4adb-9b0b-41129ff32ba7
 # ╟─61cb02eb-2dd4-4033-a294-888a8f514ad4
 # ╟─bca72327-06d6-4f3e-85ec-baec494d179e
 # ╟─7e8c23da-c411-4569-896b-a85c40b3510e
 # ╟─9ac96e4e-edc6-4538-8e16-03b24dd5bc75
+# ╟─e4ff1dd6-a3ac-4ca2-bc3a-dd11e4c43783
 # ╟─fb092f38-27a8-4fe1-9592-b77ccb1ec84b
 # ╠═b2be01ce-56a5-448b-bb5e-f5488da55919
 # ╟─962793f9-6335-4c2d-8e9f-55291758ce90
@@ -2125,7 +2183,9 @@ version = "1.4.1+1"
 # ╟─ce70a9ca-96b0-4096-9873-a7de36472e9f
 # ╟─66860986-32bc-40b8-9b7a-7bc80bf530f2
 # ╟─d9778372-b83f-45bb-bfc4-42957b7bc113
+# ╠═460f3b31-b908-484b-b730-aed64f681248
 # ╟─4a5d2113-fb96-4e68-aeff-326934afb7ca
+# ╟─f45b40ed-1ab5-4e69-a890-164c58611ff8
 # ╟─9bcfb1ea-d58d-4e89-b4b3-d1182ccad389
 # ╠═1c85594d-707d-4496-861b-4faee4d9d395
 # ╟─e531a2aa-2825-4360-b362-48845c69e353
@@ -2152,7 +2212,7 @@ version = "1.4.1+1"
 # ╟─e5c3c17b-14c1-4433-a421-b5c8dc6a6cde
 # ╟─54d64921-c416-4395-b984-ae1e15a50154
 # ╠═698706e6-e820-469a-9ed4-f48751aa075e
+# ╟─c85f59d1-794f-4ce9-affc-eec5a2381a65
 # ╠═a38d4da3-79f4-432e-8fa0-0910994da68d
-# ╠═fc49ac5e-2e6b-49af-abf1-4156111b387e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
