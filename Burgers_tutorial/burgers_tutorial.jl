@@ -10,6 +10,12 @@ using KernelAbstractions
 using Adapt
 end
 
+# ╔═╡ ebd676b8-f98d-4384-a4c4-0f333c2804d2
+using CUDA
+
+# ╔═╡ bd0d9801-9d0d-4bee-beea-131439c262cc
+using PlutoUI
+
 # ╔═╡ 06f23f52-0fcc-4707-b06c-80f4529b506d
 using Enzyme
 
@@ -32,10 +38,73 @@ where $u$ and $v$ represent the $x$ and $y$ velocities of a fluid and $\nu$ is t
 """
 
 # ╔═╡ db83cf1f-2946-4392-909f-ab96e4613260
+md"""
+# Portable Implementation
+[KernelAbstractions.jl](https://github.com/JuliaGPU/KernelAbstractions.jl) and [Adapt.jl](https://github.com/JuliaGPU/Adapt.jl) are used to write portable kernels, here the stencil.
+"""
 
+# ╔═╡ d25fc2f9-7b5c-4a23-8c21-98322eff3bf0
+md"""
+Too long of a package name...
+"""
 
 # ╔═╡ b96ea551-35ef-4b87-989b-fe5e49e098cc
 const KA = KernelAbstractions
+
+# ╔═╡ f3907dcf-e994-4449-ade0-ec7c6bf50c3f
+md"""
+We can load the CUDA Julia package even if our system does not have CUDA installed.
+"""
+
+# ╔═╡ a4a001a4-cc83-4bd8-a0f6-a3645b9a241c
+a = ones(10)
+
+# ╔═╡ 8ed9fa8a-6b5c-4658-a844-36afce6034aa
+md"""
+Move the array to the host CPU() architecture.
+"""
+
+# ╔═╡ 85a78d65-4ac7-4057-afe1-1620df33ea6d
+adapt(CPU(), a)
+
+# ╔═╡ 38ba9813-1cea-4e36-8729-bf401bf8ea72
+md"""
+Let's do an element-wise addition.
+"""
+
+# ╔═╡ 5ed89c14-d237-4aff-a999-90ed0093e266
+a .+ a
+
+# ╔═╡ dc5a47d7-9d6a-4c28-823e-4f76bd0a8eea
+md"""
+Enable the following cells only if you have a system with CUDA support.
+"""
+
+# ╔═╡ 1d32785d-03d8-4309-aa19-f4031e371a29
+cua = adapt(CUDABackend(), a)
+
+# ╔═╡ 95f79fd5-0017-4862-a27a-ad4a37c7fedd
+md"""
+Now we can do the sum on the GPU.
+"""
+
+# ╔═╡ 127c3067-25b0-474b-993a-8b2db7c180a8
+cua .+ cua
+
+# ╔═╡ 0d88b56d-070c-403c-a17f-def34d87a335
+md"""
+# Datastructures
+
+To implement Burgers we need a datastructure that stores
+
+* the field of the current timestep in two dimensions $u$ and $v$,
+* the next field,
+* grid points $n_x$ and $n_y$ in x and y direction,
+* viscosity, $\mu$
+* discretization $dx$, $dy$, $dt$,
+* number of timesteps,
+* and architecture backend.
+"""
 
 # ╔═╡ ddf67473-5f5f-44b2-bd40-415772f5aead
 begin
@@ -82,7 +151,11 @@ end
 
 # ╔═╡ feb5a4ce-f32e-4f72-94c9-a39460a6866e
 md"""
+# Functions and Methods
 To discretize the system, we use a centered finite difference scheme in space and an explicit forward Euler scheme in time.
+
+## Stencil
+We implement a kernel that computes $u_{t+1}, v_{t+1}$ with respect to $u_t$, $v_t$ at grid point $(i,j)$. This allows us to parallelize the kernel over the grid points.
 """
 
 # ╔═╡ d7df76fd-dbb3-43bd-a1a9-35b69cebcbcb
@@ -116,12 +189,13 @@ end
 
 # ╔═╡ dd62122a-89c0-471a-97c1-5f3d60b98f40
 md"""
+## Boundary and Initial Conditions
 The equation is solved on a square domain, $(x, y) \in [-L, L] \times [-L, L]$, with the initial velocities
 ```math
 
 u(0,x,y) = \exp\left(-x^2 - y^2 \right), \; \; \; \; v(0,x,y) = \exp\left(-x^2 - y^2\right).
 ```
-Here we use the domain $[-3,3] \times [-3,3].$
+Here we use the domain $[-3,3] \times [-3,3]$. Again, we implement this as a kernel over all grid points.
 """
 
 
@@ -141,6 +215,7 @@ We use Dirichlet conditions on all four boundaries
 u(t,x,-L) = u(t,x, L) = u(t,-L, y) = u(t,L, y) = 0, \\
 v(t,x,-L) = v(t,x, L) = v(t,-L, y) = v(t,L, y) = 0, .
 ```
+Here, we use the broadcast operator `.`.
 """
 
 # ╔═╡ 02e8e500-9785-436c-8e2c-d3455ab8eec3
@@ -157,12 +232,18 @@ function set_bc!(burgers::Burgers)
     return nothing
 end
 
+# ╔═╡ 0e804a08-555d-46fc-bce0-7296b4a9a32c
+md"""
+## Time Loop
+"""
+
 # ╔═╡ 69a5e411-7f1b-4f38-895d-c92a5fb152f7
 md"""
 At each time $t_f$ we can compute the current kinetic energy.
 ```math
     J = \frac{1}{N_x \cdot N_y} \sum_{j = 1}^{N_x} \sum_{k = 1}^{N_y} \left( u(t_f, x_j, y_k)^2+ v(t_f, x_j, y_k)^2 \right),
 ```
+We scale it by the number of grid points.
 """
 
 
@@ -175,12 +256,19 @@ end
 
 # ╔═╡ eabb6565-946f-4e00-a3ac-9ef33d05c594
 md"""
-Finally, get things moving by advancing in time 
+Finally, to get things moving we implement an `advance` method. 
 """
 
 # ╔═╡ 664315e2-b4db-41ad-82d1-3039454fed1e
 md"""
-and returning the final kinetic energy after $T$ timesteps.
+`advance` is then used in a time-stepping loop, which returns the final kinetic energy after $T$ timesteps.
+"""
+
+# ╔═╡ 903d9b69-0e12-4591-8249-82b78a93d83e
+md"""
+## Kernel Launches
+
+Our implementation is done. The only missing piece is launching the kernels in a parallel way. KernelAbstractions.jl takes care of that. We need to provide the `backend` we want to launch on and the number of work items. For the `stencil_kernel!` and `set_ic_kernel!`, the number of work items are all of the inner grid points. The boundary conditions are untouched.
 """
 
 # ╔═╡ 12dfa763-b307-4f76-9a0d-5b24e6130da9
@@ -234,6 +322,12 @@ function set_ic!(burgers::Burgers)
     return nothing
 end
 
+# ╔═╡ e14d9a22-4d55-4e66-8a63-8fdccd0c6d27
+md"""
+# Running the Burgers Model
+We are ready to play with our Burgers model. Initially we use $100 \times 100$ grid points and only $10$ time steps.
+"""
+
 # ╔═╡ 48b5e47b-e090-401d-ad7a-4898874b5117
 begin
 Nx = 100
@@ -245,17 +339,52 @@ dy = 1e-1
 dt = 1e-3 # dt < 0.5 * dx^2
 end
 
+# ╔═╡ 3843e17d-7eb0-4b15-a1d8-ca7e0eaefd8d
+md"""
+The Burgers object is created,
+"""
+
 # ╔═╡ de82b316-f8b9-479d-acac-dd18768e1e43
 burgers = Burgers(Nx, Ny, μ, dx, dy, dt, tsteps)
+
+# ╔═╡ 6b383ed1-80d0-4749-b1c2-44219bb7b7c2
+md"""
+the boundary conditions are set,
+"""
 
 # ╔═╡ 32aadddf-6220-4e3d-aae1-09d58e173b41
 set_ic!(burgers)
 
+# ╔═╡ 998c6c9b-9f30-4ad2-b1ae-089f53d1bb92
+md"""
+and the boundary conditions are set.
+"""
+
 # ╔═╡ c5feb1d9-4703-49a2-bedc-b996887f4d91
 set_bc!(burgers)
 
+# ╔═╡ c072dbfe-4866-4fd6-94b6-069c2deb29d5
+md"""
+The initial energy is
+"""
+
 # ╔═╡ 50c2b95a-9e72-48b9-879b-d31a70c0f6cb
 ienergy = energy(burgers)
+
+# ╔═╡ 78e3b07f-f99a-4bfc-b42d-008c9417a14c
+md"""
+and the final energy is
+"""
+
+# ╔═╡ 01549692-94ba-4119-b259-052be74fc4b0
+fenergy = final_energy!(burgers)
+
+# ╔═╡ c001200e-392e-4bd5-bf89-2b3b81e1a31f
+md"""
+# Plotting of Primal
+
+To get a nicely colored plot, we visualize the velocity magnitude $|v|^2 = u^2 + v^2$ at each point (x,y).
+"""
 
 # ╔═╡ bc294229-2b02-4b19-8f1b-71348793b323
 function velocity_magnitude(burgers)
@@ -274,25 +403,14 @@ surface(
 )
 end
 
-# ╔═╡ daf57c26-3d7c-48b1-a26f-904f1c39a112
-fenergy = final_energy!(burgers)
-
-# ╔═╡ f43f9eb8-902a-4489-981d-2c356d025289
-surface(
-    range(-3, 3, length=burgers.nx-2),
-    range(-3, 3, length=burgers.ny-2),
-    velocity_magnitude(burgers);xlabel = "x", ylabel = "y", c = color,
-    legend=:none
-)
-
 # ╔═╡ b8201b3f-5187-4fdd-86a2-feb4e1d4f05b
 md"""
-Let's crank up the resolution
+Let's crank up the resolution and number of timesteps.
 """
 
 # ╔═╡ a9814ad4-7c9b-4c25-8fa4-b1683ad9be82
 begin
-burgers_hd = Burgers(1000, 1000, μ, 1e-2, 1e-2, dt, tsteps)
+burgers_hd = Burgers(1000, 1000, μ, 1e-2, 1e-2, dt, 1000)
 set_ic!(burgers_hd)
 set_bc!(burgers_hd)
 final_energy!(burgers_hd)
@@ -304,11 +422,33 @@ surface(
 )
 end
 
+# ╔═╡ 9f411195-2312-4385-924e-9bacecfd7fd2
+md"""
+# Differentiating Burgers using Enzyme
+
+Let's reset `burgers` and think. What happens if we differentiate `burgers_hd`?
+"""
+
 # ╔═╡ 7ff17e31-f755-4fc5-b66d-64965f92c6d7
 begin
 set_bc!(burgers)
 set_ic!(burgers)
 end
+
+# ╔═╡ 7e173f65-238b-4a6b-b4ab-0da5c094e4ff
+md"""
+## Checkpointing
+If we differentiate through the entire model, every state $u$ and $v$ needs to be stored for computing the adjoint. Enzyme automatically takes care of this.
+
+
+
+With $1,000$ time steps and $1,000 \times 1,000$ grid points, this amounts to $10^9 \cdot 8$ bytes, or 32 GB.
+
+Checkpointing is a technique for using recomputation to reduce memory load. It's a trade-off between memory requirement and runtime.
+"""
+
+# ╔═╡ dba3c1e5-180e-4645-b408-3ec153561b0a
+md"""$(LocalResource("checkpointing.png"))"""
 
 # ╔═╡ f152117a-578c-451f-86ce-4acd1a669bfd
 dburgers = Enzyme.make_zero(deepcopy(burgers))
@@ -381,17 +521,21 @@ dburgers_long.lastu
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Checkpointing = "eb46d486-4f9c-4c3d-b445-a617f2a2f1ca"
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 
 [compat]
 Adapt = "~4.0.4"
+CUDA = "~5.4.2"
 Checkpointing = "~0.9.3"
 Enzyme = "~0.12.10"
 KernelAbstractions = "~0.9.19"
 Plots = "~1.40.4"
+PlutoUI = "~0.7.59"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -400,7 +544,24 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "c65a5a2498327181b92cfecb590243fdbc223610"
+project_hash = "900d9e5c33fb21aae2829f57f6ce98bd0891b734"
+
+[[deps.AbstractFFTs]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "d92ad398961a3ed262d8bf04a1a2b8340f915fef"
+uuid = "621f4979-c628-5d54-868e-fcf4e3e8185c"
+version = "1.5.0"
+weakdeps = ["ChainRulesCore", "Test"]
+
+    [deps.AbstractFFTs.extensions]
+    AbstractFFTsChainRulesCoreExt = "ChainRulesCore"
+    AbstractFFTsTestExt = "Test"
+
+[[deps.AbstractPlutoDingetjes]]
+deps = ["Pkg"]
+git-tree-sha1 = "6e1d2a35f2f90a4bc7c2ed98079b2ba09c35b83a"
+uuid = "6e696c72-6542-2067-7265-42206c756150"
+version = "1.3.2"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -425,6 +586,12 @@ git-tree-sha1 = "c06a868224ecba914baa6942988e2f2aade419be"
 uuid = "a9b6321e-bd34-4604-b9c9-b65b8de01458"
 version = "0.1.0"
 
+[[deps.BFloat16s]]
+deps = ["LinearAlgebra", "Printf", "Random", "Test"]
+git-tree-sha1 = "2c7cc21e8678eff479978a0a2ef5ce2f51b63dff"
+uuid = "ab4f0b2a-ad5b-11e8-123f-65d77653426b"
+version = "0.5.0"
+
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
@@ -443,6 +610,40 @@ version = "1.0.8+1"
 git-tree-sha1 = "389ad5c84de1ae7cf0e28e381131c98ea87d54fc"
 uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 version = "0.5.0"
+
+[[deps.CUDA]]
+deps = ["AbstractFFTs", "Adapt", "BFloat16s", "CEnum", "CUDA_Driver_jll", "CUDA_Runtime_Discovery", "CUDA_Runtime_jll", "Crayons", "DataFrames", "ExprTools", "GPUArrays", "GPUCompiler", "KernelAbstractions", "LLVM", "LLVMLoopInfo", "LazyArtifacts", "Libdl", "LinearAlgebra", "Logging", "NVTX", "Preferences", "PrettyTables", "Printf", "Random", "Random123", "RandomNumbers", "Reexport", "Requires", "SparseArrays", "StaticArrays", "Statistics"]
+git-tree-sha1 = "6e945e876652f2003e6ca74e19a3c45017d3e9f6"
+uuid = "052768ef-5323-5732-b1bb-66c8b64840ba"
+version = "5.4.2"
+
+    [deps.CUDA.extensions]
+    ChainRulesCoreExt = "ChainRulesCore"
+    EnzymeCoreExt = "EnzymeCore"
+    SpecialFunctionsExt = "SpecialFunctions"
+
+    [deps.CUDA.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    EnzymeCore = "f151be2c-9106-41f4-ab19-57ee4f262869"
+    SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+
+[[deps.CUDA_Driver_jll]]
+deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "Pkg"]
+git-tree-sha1 = "c48f9da18efd43b6b7adb7ee1f93fe5f2926c339"
+uuid = "4ee394cb-3365-5eb0-8335-949819d2adfc"
+version = "0.9.0+0"
+
+[[deps.CUDA_Runtime_Discovery]]
+deps = ["Libdl"]
+git-tree-sha1 = "5db9da5fdeaa708c22ba86b82c49528f402497f2"
+uuid = "1af6417a-86b4-443c-805f-a4643ffb695f"
+version = "0.3.3"
+
+[[deps.CUDA_Runtime_jll]]
+deps = ["Artifacts", "CUDA_Driver_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
+git-tree-sha1 = "bcba305388e16aa5c879e896726db9e71b4942c6"
+uuid = "76a88914-d11a-5bdc-97e0-2f5a05c973a2"
+version = "0.14.0+1"
 
 [[deps.Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
@@ -528,16 +729,32 @@ git-tree-sha1 = "439e35b0b36e2e5881738abc8857bd92ad6ff9a8"
 uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
 version = "0.6.3"
 
+[[deps.Crayons]]
+git-tree-sha1 = "249fe38abf76d48563e2f4556bebd215aa317e15"
+uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
+version = "4.1.1"
+
 [[deps.DataAPI]]
 git-tree-sha1 = "abe83f3a2f1b857aac70ef8b269080af17764bbe"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
 version = "1.16.0"
+
+[[deps.DataFrames]]
+deps = ["Compat", "DataAPI", "DataStructures", "Future", "InlineStrings", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrecompileTools", "PrettyTables", "Printf", "REPL", "Random", "Reexport", "SentinelArrays", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
+git-tree-sha1 = "04c738083f29f86e62c8afc341f0967d8717bdb8"
+uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+version = "1.6.1"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
 git-tree-sha1 = "1d0a14036acb104d9e89698bd408f63ab58cdc82"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 version = "0.18.20"
+
+[[deps.DataValueInterfaces]]
+git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
+uuid = "e2d170a0-9d28-54be-80f0-106bbe20a464"
+version = "1.0.0"
 
 [[deps.Dates]]
 deps = ["Printf"]
@@ -658,11 +875,27 @@ git-tree-sha1 = "1ed150b39aebcc805c26b93a8d0122c940f64ce2"
 uuid = "559328eb-81f9-559d-9380-de523a88c83c"
 version = "1.0.14+0"
 
+[[deps.Future]]
+deps = ["Random"]
+uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
+
 [[deps.GLFW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll"]
 git-tree-sha1 = "ff38ba61beff76b8f4acad8ab0c97ef73bb670cb"
 uuid = "0656b61e-2033-5cc2-a64a-77c0f6c09b89"
 version = "3.3.9+0"
+
+[[deps.GPUArrays]]
+deps = ["Adapt", "GPUArraysCore", "LLVM", "LinearAlgebra", "Printf", "Random", "Reexport", "Serialization", "Statistics"]
+git-tree-sha1 = "38cb19b8a3e600e509dc36a6396ac74266d108c1"
+uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
+version = "10.1.1"
+
+[[deps.GPUArraysCore]]
+deps = ["Adapt"]
+git-tree-sha1 = "ec632f177c0d990e64d955ccc1b8c04c485a0950"
+uuid = "46192b85-c4d5-4398-a991-12ede77f4527"
+version = "0.1.6"
 
 [[deps.GPUCompiler]]
 deps = ["ExprTools", "InteractiveUtils", "LLVM", "Libdl", "Logging", "Scratch", "TimerOutputs", "UUIDs"]
@@ -741,14 +974,48 @@ git-tree-sha1 = "ca0f6bf568b4bfc807e7537f081c81e35ceca114"
 uuid = "e33a78d0-f292-5ffc-b300-72abe9b543c8"
 version = "2.10.0+0"
 
+[[deps.Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "179267cfa5e712760cd43dcae385d7ea90cc25a4"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.5"
+
+[[deps.HypertextLiteral]]
+deps = ["Tricks"]
+git-tree-sha1 = "7134810b1afce04bbc1045ca1985fbe81ce17653"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.5"
+
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "8b72179abc660bfab5e28472e019392b97d0985c"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.4"
+
+[[deps.InlineStrings]]
+deps = ["Parsers"]
+git-tree-sha1 = "9cc2baf75c6d09f9da536ddf58eb2f29dedaf461"
+uuid = "842dd82b-1e85-43dc-bf29-5d0ee9dffc48"
+version = "1.4.0"
+
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+
+[[deps.InvertedIndices]]
+git-tree-sha1 = "0dc7b50b8d436461be01300fd8cd45aa0274b038"
+uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
+version = "1.3.0"
 
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "630b497eafcc20001bba38a4651b327dcfc491d2"
 uuid = "92d709cd-6900-40b7-9082-c6be49f344b6"
 version = "0.2.2"
+
+[[deps.IteratorInterfaceExtensions]]
+git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
+uuid = "82899510-4779-5014-852e-03e436cf321d"
+version = "1.0.0"
 
 [[deps.JLFzf]]
 deps = ["Pipe", "REPL", "Random", "fzf_jll"]
@@ -773,6 +1040,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "c84a835e1a09b289ffcd2271bf2a337bbdda6637"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
 version = "3.0.3+0"
+
+[[deps.JuliaNVTXCallbacks_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "af433a10f3942e882d3c671aacb203e006a5808f"
+uuid = "9c1d0b0a-7046-5b2e-a33f-ea22f176ac7e"
+version = "0.2.1+0"
 
 [[deps.KernelAbstractions]]
 deps = ["Adapt", "Atomix", "InteractiveUtils", "LinearAlgebra", "MacroTools", "PrecompileTools", "Requires", "SparseArrays", "StaticArrays", "UUIDs", "UnsafeAtomics", "UnsafeAtomicsLLVM"]
@@ -801,18 +1074,21 @@ deps = ["CEnum", "LLVMExtra_jll", "Libdl", "Preferences", "Printf", "Requires", 
 git-tree-sha1 = "389aea28d882a40b5e1747069af71bdbd47a1cae"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
 version = "7.2.1"
+weakdeps = ["BFloat16s"]
 
     [deps.LLVM.extensions]
     BFloat16sExt = "BFloat16s"
-
-    [deps.LLVM.weakdeps]
-    BFloat16s = "ab4f0b2a-ad5b-11e8-123f-65d77653426b"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
 git-tree-sha1 = "88b916503aac4fb7f701bb625cd84ca5dd1677bc"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
 version = "0.0.29+0"
+
+[[deps.LLVMLoopInfo]]
+git-tree-sha1 = "2e5c102cfc41f48ae4740c7eca7743cc7e7b75ea"
+uuid = "8b046642-f1f6-4319-8d3c-209ddc03c586"
+version = "1.0.0"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -953,6 +1229,11 @@ git-tree-sha1 = "c1dd6d7978c12545b4179fb6153b9250c96b0075"
 uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 version = "1.0.3"
 
+[[deps.MIMEs]]
+git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
+uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
+version = "0.1.4"
+
 [[deps.MPICH_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Hwloc_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "MPIPreferences", "TOML"]
 git-tree-sha1 = "4099bb6809ac109bfc17d521dad33763bcf026b7"
@@ -1015,6 +1296,18 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 version = "2023.1.10"
+
+[[deps.NVTX]]
+deps = ["Colors", "JuliaNVTXCallbacks_jll", "Libdl", "NVTX_jll"]
+git-tree-sha1 = "53046f0483375e3ed78e49190f1154fa0a4083a1"
+uuid = "5da4648a-3479-48b8-97b9-01cb529c0a1f"
+version = "0.3.4"
+
+[[deps.NVTX_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "ce3269ed42816bf18d500c9f63418d4b0d9f5a3b"
+uuid = "e98f9f5b-d649-5603-91fd-7774390e6439"
+version = "3.1.0+2"
 
 [[deps.NaNMath]]
 deps = ["OpenLibm_jll"]
@@ -1136,6 +1429,18 @@ version = "1.40.4"
     ImageInTerminal = "d8c32880-2388-543b-8c61-d9f865259254"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
+[[deps.PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
+git-tree-sha1 = "ab55ee1510ad2af0ff674dbcced5e94921f867a9"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.59"
+
+[[deps.PooledArrays]]
+deps = ["DataAPI", "Future"]
+git-tree-sha1 = "36d8b4b899628fb92c2749eb488d884a926614d3"
+uuid = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
+version = "1.4.3"
+
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
 git-tree-sha1 = "5aa36f7049a63a1528fe8f7c3f2113413ffd4e1f"
@@ -1147,6 +1452,12 @@ deps = ["TOML"]
 git-tree-sha1 = "9306f6085165d270f7e3db02af26a400d580f5c6"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
 version = "1.4.3"
+
+[[deps.PrettyTables]]
+deps = ["Crayons", "LaTeXStrings", "Markdown", "PrecompileTools", "Printf", "Reexport", "StringManipulation", "Tables"]
+git-tree-sha1 = "66b20dd35966a748321d3b2537c4584cf40387c7"
+uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
+version = "2.3.2"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -1165,6 +1476,18 @@ uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 [[deps.Random]]
 deps = ["SHA"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[[deps.Random123]]
+deps = ["Random", "RandomNumbers"]
+git-tree-sha1 = "4743b43e5a9c4a2ede372de7061eed81795b12e7"
+uuid = "74087812-796a-5b5d-8853-05524746bad3"
+version = "1.7.0"
+
+[[deps.RandomNumbers]]
+deps = ["Random", "Requires"]
+git-tree-sha1 = "043da614cc7e95c703498a491e2c21f58a2b8111"
+uuid = "e6cf234a-135c-5ec9-84dd-332b85af5143"
+version = "1.5.3"
 
 [[deps.RecipesBase]]
 deps = ["PrecompileTools"]
@@ -1204,6 +1527,12 @@ deps = ["Dates"]
 git-tree-sha1 = "3bac05bc7e74a75fd9cba4295cde4045d9fe2386"
 uuid = "6c6a2e73-6563-6170-7368-637461726353"
 version = "1.2.1"
+
+[[deps.SentinelArrays]]
+deps = ["Dates", "Random"]
+git-tree-sha1 = "90b4f68892337554d31cdcdbe19e48989f26c7e6"
+uuid = "91c51154-3ec4-41a3-a24f-3f23e20d615c"
+version = "1.4.3"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
@@ -1266,6 +1595,12 @@ git-tree-sha1 = "5cf7606d6cef84b543b483848d4ae08ad9832b21"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.34.3"
 
+[[deps.StringManipulation]]
+deps = ["PrecompileTools"]
+git-tree-sha1 = "a04cabe79c5f01f4d723cc6704070ada0b9d46d5"
+uuid = "892a3eda-7b42-436c-8928-eab12a02cf0e"
+version = "0.3.4"
+
 [[deps.StructIO]]
 deps = ["Test"]
 git-tree-sha1 = "010dc73c7146869c042b49adcdb6bf528c12e859"
@@ -1281,6 +1616,18 @@ version = "7.2.1+1"
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 version = "1.0.3"
+
+[[deps.TableTraits]]
+deps = ["IteratorInterfaceExtensions"]
+git-tree-sha1 = "c06b2f539df1c6efa794486abfb6ed2022561a39"
+uuid = "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c"
+version = "1.0.1"
+
+[[deps.Tables]]
+deps = ["DataAPI", "DataValueInterfaces", "IteratorInterfaceExtensions", "LinearAlgebra", "OrderedCollections", "TableTraits"]
+git-tree-sha1 = "cb76cf677714c095e535e3501ac7954732aeea2d"
+uuid = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
+version = "1.11.1"
 
 [[deps.Tar]]
 deps = ["ArgTools", "SHA"]
@@ -1311,6 +1658,11 @@ weakdeps = ["Random", "Test"]
 
     [deps.TranscodingStreams.extensions]
     TestExt = ["Test", "Random"]
+
+[[deps.Tricks]]
+git-tree-sha1 = "eae1bb484cd63b36999ee58be2de6c178105112f"
+uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
+version = "0.1.8"
 
 [[deps.URIs]]
 git-tree-sha1 = "67db6cc7b3821e19ebe75791a9dd19c9b1188f2b"
@@ -1665,37 +2017,62 @@ version = "1.4.1+1"
 
 # ╔═╡ Cell order:
 # ╟─a575949c-2368-11ef-2b2d-2fe3a2ffbae3
-# ╠═db83cf1f-2946-4392-909f-ab96e4613260
+# ╟─db83cf1f-2946-4392-909f-ab96e4613260
 # ╠═bbe566f7-02b7-480b-bd63-d6c72aa1ac40
+# ╟─d25fc2f9-7b5c-4a23-8c21-98322eff3bf0
 # ╠═b96ea551-35ef-4b87-989b-fe5e49e098cc
+# ╟─f3907dcf-e994-4449-ade0-ec7c6bf50c3f
+# ╠═ebd676b8-f98d-4384-a4c4-0f333c2804d2
+# ╠═a4a001a4-cc83-4bd8-a0f6-a3645b9a241c
+# ╟─8ed9fa8a-6b5c-4658-a844-36afce6034aa
+# ╠═85a78d65-4ac7-4057-afe1-1620df33ea6d
+# ╟─38ba9813-1cea-4e36-8729-bf401bf8ea72
+# ╠═5ed89c14-d237-4aff-a999-90ed0093e266
+# ╟─dc5a47d7-9d6a-4c28-823e-4f76bd0a8eea
+# ╠═1d32785d-03d8-4309-aa19-f4031e371a29
+# ╟─95f79fd5-0017-4862-a27a-ad4a37c7fedd
+# ╠═127c3067-25b0-474b-993a-8b2db7c180a8
+# ╟─0d88b56d-070c-403c-a17f-def34d87a335
 # ╠═ddf67473-5f5f-44b2-bd40-415772f5aead
 # ╟─feb5a4ce-f32e-4f72-94c9-a39460a6866e
 # ╠═d7df76fd-dbb3-43bd-a1a9-35b69cebcbcb
 # ╟─dd62122a-89c0-471a-97c1-5f3d60b98f40
 # ╠═0dc72edd-d11c-4f71-baee-a5c265b2d135
-# ╠═75f0cbda-57f4-4232-93f8-a88ccd764d16
+# ╟─75f0cbda-57f4-4232-93f8-a88ccd764d16
 # ╠═02e8e500-9785-436c-8e2c-d3455ab8eec3
+# ╟─0e804a08-555d-46fc-bce0-7296b4a9a32c
 # ╟─69a5e411-7f1b-4f38-895d-c92a5fb152f7
 # ╠═a25e3d03-8eed-4a0b-9fd7-c5e30f9c8f1c
 # ╟─eabb6565-946f-4e00-a3ac-9ef33d05c594
 # ╠═4b4f81f6-6ff0-430f-8a86-965d4a41044d
-# ╟─664315e2-b4db-41ad-82d1-3039454fed1e
+# ╠═664315e2-b4db-41ad-82d1-3039454fed1e
 # ╠═9c21cfa8-0db3-4d74-9465-75bf25b15a5b
+# ╟─903d9b69-0e12-4591-8249-82b78a93d83e
 # ╟─12dfa763-b307-4f76-9a0d-5b24e6130da9
 # ╠═64b6eca3-8b8a-470c-b496-8207d88fb99c
 # ╠═96a54adb-015c-4243-a99d-9cda695f2a4d
+# ╟─e14d9a22-4d55-4e66-8a63-8fdccd0c6d27
 # ╠═48b5e47b-e090-401d-ad7a-4898874b5117
+# ╟─3843e17d-7eb0-4b15-a1d8-ca7e0eaefd8d
 # ╠═de82b316-f8b9-479d-acac-dd18768e1e43
+# ╟─6b383ed1-80d0-4749-b1c2-44219bb7b7c2
 # ╠═32aadddf-6220-4e3d-aae1-09d58e173b41
+# ╟─998c6c9b-9f30-4ad2-b1ae-089f53d1bb92
 # ╠═c5feb1d9-4703-49a2-bedc-b996887f4d91
-# ╠═50c2b95a-9e72-48b9-879b-d31a70c0f6cb
+# ╟─c072dbfe-4866-4fd6-94b6-069c2deb29d5
+# ╟─50c2b95a-9e72-48b9-879b-d31a70c0f6cb
+# ╠═78e3b07f-f99a-4bfc-b42d-008c9417a14c
+# ╠═01549692-94ba-4119-b259-052be74fc4b0
+# ╟─c001200e-392e-4bd5-bf89-2b3b81e1a31f
 # ╠═bc294229-2b02-4b19-8f1b-71348793b323
 # ╠═f9f6b93f-74b4-49bb-91ed-71b14c87fb3a
-# ╠═daf57c26-3d7c-48b1-a26f-904f1c39a112
-# ╠═f43f9eb8-902a-4489-981d-2c356d025289
 # ╟─b8201b3f-5187-4fdd-86a2-feb4e1d4f05b
 # ╠═a9814ad4-7c9b-4c25-8fa4-b1683ad9be82
+# ╟─9f411195-2312-4385-924e-9bacecfd7fd2
 # ╠═7ff17e31-f755-4fc5-b66d-64965f92c6d7
+# ╠═bd0d9801-9d0d-4bee-beea-131439c262cc
+# ╟─7e173f65-238b-4a6b-b4ab-0da5c094e4ff
+# ╟─dba3c1e5-180e-4645-b408-3ec153561b0a
 # ╠═06f23f52-0fcc-4707-b06c-80f4529b506d
 # ╠═f152117a-578c-451f-86ce-4acd1a669bfd
 # ╠═826e779b-cc2c-4da1-9430-93dfa4641185
