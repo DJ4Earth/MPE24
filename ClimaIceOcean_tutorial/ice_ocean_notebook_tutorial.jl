@@ -32,6 +32,8 @@ begin
 
 	using KernelAbstractions
 
+	using GLMakie
+
 	include("./ice_ocean_interaction.jl")
 
 	Enzyme.API.runtimeActivity!(true)
@@ -265,59 +267,40 @@ md"Let's set diffusivity $\kappa = 1$ and our number of forward time steps $n_{\
 # ╔═╡ 7cc53014-2395-4357-bbbb-d2d7eff59e20
 begin
 	κ = 1
-	n_max  = 10
+	n_max  = 100
 end
 
 # ╔═╡ 0b04432b-0e5d-4d99-9808-0a1ad7765f72
-md"Then we can call `ice_ocean_data` and get the true initial water temperature and ice thickness $T_0$ and $h_0$, as well as the true final temperature and thickness $T_n$ and $h_n$. We can show each of these fields to see their shapes (which should align with their corresponding grids) and some statistics."
+md"Then we can call `ice_ocean_data` and get the true initial water temperature and ice thickness $T_0$ and $h_0$, as well as the true final temperature and thickness $T_n$ and $h_n$. We can use the `@show` macro on each of these fields to see their shapes (which should align with their corresponding grids) and some statistics, and also plot them."
 
 # ╔═╡ 045b79be-be33-4f17-b142-5f5b82c9e1f1
 T₀, Tₙ, h₀, hₙ = ice_ocean_data(ocean_model, ice_model, κ, n_max)
 
-# ╔═╡ 399fde4f-d981-45e6-9258-04befb36d9fc
+# ╔═╡ 042ee0ec-58b2-470d-84f5-302c87a88281
 begin
-	using GLMakie
-	#=
-	set_theme!(Theme(fontsize=24))
-	
-	xpoints = xnodes(grid, Center())
-	ypoints = ynodes(grid, Center())
-	
-	fig = Figure(resolution=(2400, 700))
-	
-	axh = Axis(fig[1, 1], xlabel="x (km)", ylabel="y (km)", title="Ice thickness")
-	axT = Axis(fig[1, 2], xlabel="x (km)", ylabel="y (km)", title="Ocean surface temperature")
-	
-	title = string("Temperature and Ice Thickness")
-	Label(fig[0, 1:3], title)
-	
-	Hn = hₙ
-	Tn = Tₙ
-	
-	Tntop = view(Tn, :, :, Nz)
-	Tnmax = maximum(abs, Tn)
-	Tnlim = 5e-5 #ζmax / 2
-	
-	heatmap!(axh, xpoints, ypoints, Hn, colorrange=(0, 1), colormap=:grays)
-	heatmap!(axT, xpoints, ypoints, Tntop, colormap=:heat)
-	=#
-
+	@show T₀
 	xpoints = xnodes(grid, Center())
 	ypoints = ynodes(grid, Center())	
-	heatmap(xpoints, ypoints, hₙ.data[0:Nx,0:Ny])
+	heatmap(xpoints, ypoints, T₀.data[0:Nx,0:Ny,Nz], colormap=:bluesreds, colorrange = (-5, 5))
 end
 
-# ╔═╡ 042ee0ec-58b2-470d-84f5-302c87a88281
-@show T₀
-
 # ╔═╡ d6e9261a-5455-4bdf-86cd-dc52d70411fa
-@show Tₙ
+begin
+	@show Tₙ
+	heatmap(xpoints, ypoints, Tₙ.data[0:Nx,0:Ny,Nz], colormap=:bluesreds, colorrange = (-5, 5))
+end
 
 # ╔═╡ 843067f7-034f-4483-bcec-0b99af8b0862
-@show h₀
+begin
+	@show h₀
+	heatmap(xpoints, ypoints, h₀.data[0:Nx,0:Ny], colormap=:grays, colorrange = (0, 0.05))
+end
 
 # ╔═╡ d7d5d9ac-0f13-40fc-98be-0427f4863dc8
-@show hₙ
+begin
+	@show hₙ
+	heatmap(xpoints, ypoints, hₙ.data[0:Nx,0:Ny], colormap=:grays, colorrange = (0, 0.05))
+end
 
 # ╔═╡ 76727025-342d-4cec-b632-e66e2b655ff1
 md"### Step 4: Run the forward model
@@ -415,6 +398,7 @@ Since we're inverting for $T_i$, we're only interested in the shadow $dT_i$. We 
 "
 
 # ╔═╡ 35cdbc37-bff5-4f6c-a691-3feb984fe148
+#=
 # Update our guess of the initial tracer distribution, cᵢ:
 for i = 1:max_steps
 	# Create shadows and set all their values to 0:
@@ -450,6 +434,12 @@ for i = 1:max_steps
     @show (norm(Tᵢ - T₀) / norm(T₀))
     
 end
+=#
+
+# ╔═╡ 399fde4f-d981-45e6-9258-04befb36d9fc
+begin
+	heatmap(xpoints, ypoints, Tᵢ[1:Nx,1:Ny,Nz])
+end
 
 # ╔═╡ ca0ca8a0-1692-4cc0-8726-26de146051b7
 md"### Results
@@ -461,7 +451,7 @@ First, inferring parameters for something as complicated as an ocean/ice model i
 # ╔═╡ Cell order:
 # ╟─92d7f11a-6a68-4d2e-9a5f-ee0798528c43
 # ╟─32388534-3ac7-497d-a933-086100ff0c20
-# ╟─9afd85ee-b9de-4629-b9a8-3ce6ea0f10db
+# ╠═9afd85ee-b9de-4629-b9a8-3ce6ea0f10db
 # ╟─3adeeda5-7db4-4d38-a0c4-2adee41c14e8
 # ╠═071a8881-0be3-4052-9c28-bc76057b6b5a
 # ╟─9637e4af-6176-490d-9c96-c2d3b2a7b32d
@@ -476,7 +466,7 @@ First, inferring parameters for something as complicated as an ocean/ice model i
 # ╠═fc39f605-9635-402d-b60a-1c8c15a82c89
 # ╟─62b3adee-63b0-4f05-b304-d1d8b0d40ef9
 # ╠═7cc53014-2395-4357-bbbb-d2d7eff59e20
-# ╟─0b04432b-0e5d-4d99-9808-0a1ad7765f72
+# ╠═0b04432b-0e5d-4d99-9808-0a1ad7765f72
 # ╠═045b79be-be33-4f17-b142-5f5b82c9e1f1
 # ╠═042ee0ec-58b2-470d-84f5-302c87a88281
 # ╠═d6e9261a-5455-4bdf-86cd-dc52d70411fa
