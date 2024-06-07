@@ -631,8 +631,8 @@ PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Adapt = "~4.0.4"
 CUDA = "~5.4.2"
 Checkpointing = "~0.9.3"
-Enzyme = "~0.12.10"
-KernelAbstractions = "~0.9.19"
+Enzyme = "~0.12.11"
+KernelAbstractions = "~0.9.20"
 Plots = "~1.40.4"
 PlutoUI = "~0.7.59"
 """
@@ -641,9 +641,9 @@ PlutoUI = "~0.7.59"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.4"
+julia_version = "1.10.3"
 manifest_format = "2.0"
-project_hash = "900d9e5c33fb21aae2829f57f6ce98bd0891b734"
+project_hash = "510cccfa48f6722817c2e498519d067092236a2a"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -878,9 +878,9 @@ version = "1.6.0"
 
 [[deps.Enzyme]]
 deps = ["CEnum", "EnzymeCore", "Enzyme_jll", "GPUCompiler", "LLVM", "Libdl", "LinearAlgebra", "ObjectFile", "Preferences", "Printf", "Random"]
-git-tree-sha1 = "c8dfc251413d4452e52974344f1c88a38a93f189"
+git-tree-sha1 = "421556f232e54456bf1d11d4b9e74f6bb8261487"
 uuid = "7da242da-08ed-463a-9acd-ee780be4f1d9"
-version = "0.12.10"
+version = "0.12.11"
 
     [deps.Enzyme.extensions]
     EnzymeChainRulesCoreExt = "ChainRulesCore"
@@ -1148,9 +1148,9 @@ version = "0.2.1+0"
 
 [[deps.KernelAbstractions]]
 deps = ["Adapt", "Atomix", "InteractiveUtils", "LinearAlgebra", "MacroTools", "PrecompileTools", "Requires", "SparseArrays", "StaticArrays", "UUIDs", "UnsafeAtomics", "UnsafeAtomicsLLVM"]
-git-tree-sha1 = "db02395e4c374030c53dc28f3c1d33dec35f7272"
+git-tree-sha1 = "8e5a339882cc401688d79b811d923a38ba77d50a"
 uuid = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
-version = "0.9.19"
+version = "0.9.20"
 weakdeps = ["EnzymeCore"]
 
     [deps.KernelAbstractions.extensions]
@@ -1673,9 +1673,9 @@ weakdeps = ["ChainRulesCore", "Statistics"]
     StaticArraysStatisticsExt = "Statistics"
 
 [[deps.StaticArraysCore]]
-git-tree-sha1 = "36b3d696ce6366023a0ea192b4cd442268995a0d"
+git-tree-sha1 = "192954ef1208c7019899fbf8049e717f92959682"
 uuid = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
-version = "1.4.2"
+version = "1.4.3"
 
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]

@@ -140,6 +140,8 @@ In addition to just adding Enzyme, there are a couple of Enzyme flags that we ne
 begin
 	Enzyme.API.looseTypeAnalysis!(true)
 	Enzyme.API.runtimeActivity!(true)
+
+	settings_token = nothing # https://discourse.julialang.org/t/how-to-hand-craft-an-edge-into-a-plutos-a-computational-graph/108619/12
 end
 
 # ╔═╡ 157eae12-474d-405a-9422-24fdd3bfd2a9
@@ -525,6 +527,8 @@ md"""
 
 # ╔═╡ eec46495-ba5b-475f-8ed8-4d6e2dd2a24a
 begin
+	settings_token
+
 	S = model_setup(output=false,
 		L_ratio=1,
 		g=9.81,
@@ -598,7 +602,8 @@ Let's now compute a derivative beginning from a non-zero initial condition. To d
 
 # ╔═╡ deda080d-e0ce-4c89-8e36-7723a92055db
 begin 
-
+	settings_token
+	
 	S2 = model_setup(output=false,
     L_ratio=1,
     g=9.81,
@@ -668,6 +673,8 @@ meaning for sufficiently small $\varepsilon$ we expect finite differences be rou
 
 # ╔═╡ 698706e6-e820-469a-9ed4-f48751aa075e
 begin
+	settings_token
+
 	enzyme_deriv = dS2.Prog.u[25,25]
 	
 	steps = [30, 20, 10, 1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]
