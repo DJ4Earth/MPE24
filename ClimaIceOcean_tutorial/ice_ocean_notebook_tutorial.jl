@@ -263,7 +263,7 @@ begin
 end
 
 # ╔═╡ 62b3adee-63b0-4f05-b304-d1d8b0d40ef9
-md"Let's set diffusivity $\kappa = 1$ and our number of forward time steps $n_{\text{max}} = 10$:"
+md"Let's set diffusivity $\kappa = 1$ and our number of forward time steps $n_{\text{max}} = 100$:"
 
 # ╔═╡ 7cc53014-2395-4357-bbbb-d2d7eff59e20
 begin
@@ -427,6 +427,9 @@ begin
 	max_steps = 80
 end
 
+# ╔═╡ 5165efa2-4d84-4be4-9fb2-6c9a017cf7ca
+md"Our initial temperature guess is simply constant everywhere:"
+
 # ╔═╡ 44400683-d766-4fe1-b53b-03f5d2f60776
 heatmap(xpoints, ypoints, Tᵢ[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = (-5, 5))
 
@@ -481,21 +484,99 @@ for i = 1:max_steps
 end
 
 
-# ╔═╡ 399fde4f-d981-45e6-9258-04befb36d9fc
-heatmap(xpoints, ypoints, Tᵢ[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = temp_color_range)
+# ╔═╡ b891d28f-9268-439b-8ef7-7fb713cb2ce6
+md"We see the norm relative error between our true initial temperature $T_0$ and guessed initial temperature $T_i$ is pretty high, which isn't good. But error norms don't tell the whole story. Let's plot our results for a visual comparison.
+
+### Plots of Inverted-for Data
+
+Here's a plot showing the true final temperature (made from the true initial temperature) compared to the final temperature from our guesses initial condition in the inverse problem. Since our misfit function $J$ tried to reduce the error between these two values, they look very similar:"
 
 # ╔═╡ 934fb784-be1b-4b9d-ae5e-57ad07a38cfd
-heatmap(xpoints, zpoints, Tᵢ[1:Nx,Int(Ny/2),1:Nz], colormap=:bluesreds, colorrange = temp_color_range)
+begin
+	figsizeInverse = (figsize[1], 2figsize[2])
+	figIn = Figure(size=figsizeInverse)
+	
+	axT0ntop = Axis(figIn[1, 1], xlabel="x (m)", ylabel="y (m)", title="True final water surface Temperature")
+	axT0nside = Axis(figIn[2, 1], xlabel="x (m)", ylabel="z (m)", title="True final water depth temperature (cross-section)")
+	Colorbar(figIn[1, 3], limits = temp_color_range, colormap = :bluesreds,
+    label = "Temperature (⚪ C)")
+
+	axTintop = Axis(figIn[1, 2], xlabel="x (m)", ylabel="y (m)", title="Inverted final water surface Temperature")
+	axTinside = Axis(figIn[2, 2], xlabel="x (m)", ylabel="z (m)", title="Inverted final water depth temperature (cross-section)")
+	Colorbar(figIn[2, 3], limits = temp_color_range, colormap = :bluesreds,
+    label = "Temperature (⚪ C)")
+	
+	heatmap!(axT0ntop, xpoints, ypoints, Tₙ.data[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = temp_color_range)
+	heatmap!(axT0nside, xpoints, zpoints, Tₙ.data[1:Nx,Int(Ny/2),1:Nz], colormap=:bluesreds, colorrange = temp_color_range)
+	heatmap!(axTintop, xpoints, ypoints, ocean_model.tracers.T.data[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = temp_color_range)
+	heatmap!(axTinside, xpoints, zpoints, ocean_model.tracers.T.data[1:Nx,Int(Ny/2),1:Nz], colormap=:bluesreds, colorrange = temp_color_range)
+
+	figIn
+end
+
+# ╔═╡ 0bfdd29e-6ab3-406c-9109-40422d059f74
+md"Here is the final ice thickness from our true results compared to the final ice derived from our inverse problem. Again, $J$ includes the squared error between these values so they look very similar:"
 
 # ╔═╡ 222416ae-1aa0-4f48-9e8d-3aabc34e21dd
-heatmap(xpoints, ypoints, ocean_model.tracers.T.data[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = (-5, 5))
+begin
+	fighi = Figure(size=figsize)
+	
+	axH0i = Axis(fighi[1, 1], xlabel="x (m)", ylabel="y (m)", title="True final ice thickness")
+	axHi = Axis(fighi[1, 2], xlabel="x (m)", ylabel="y (m)", title="Inverted final ice thickness")
+	Colorbar(fighi[1, 3], limits = ice_color_range, colormap = :grays,
+    label = "Ice thickness (m)")
+	
+	
+	heatmap!(axH0i, xpoints, ypoints, hₙ.data[1:Nx,1:Ny], colormap=:grays, colorrange = ice_color_range)
+	heatmap!(axHi, xpoints, ypoints, ice_model.ice_thickness.data[1:Nx,1:Ny], colormap=:grays, colorrange = ice_color_range)
+
+	fighi
+end
+
+# ╔═╡ 8ac54b9e-7a50-49ce-99ad-60244bb12c9d
+md"And the big test... how does our inverted-for initial temperature field compare to the true one? Note that these plots use the same temperature scales and colorbar. Although the exact temperatures are different, pretty much all of the features in our initial temperature field are represented in the inverted one. But there are a few clear errors to: for example, at greater depths there's a faint temperature oscillation that isn't present in the true data:"
+
+# ╔═╡ 9915a338-69d2-4fac-98d0-737bdfa69543
+begin
+
+	figI = Figure(size=figsizeInverse)
+	
+	axT0top = Axis(figI[1, 1], xlabel="x (m)", ylabel="y (m)", title="True initial water surface Temperature")
+	axT0side = Axis(figI[2, 1], xlabel="x (m)", ylabel="z (m)", title="True initial water depth temperature (cross-section)")
+	Colorbar(figI[1, 3], limits = temp_color_range, colormap = :bluesreds,
+    label = "Temperature (⚪ C)")
+
+	axTitop = Axis(figI[1, 2], xlabel="x (m)", ylabel="y (m)", title="Inverted initial water surface Temperature")
+	axTiside = Axis(figI[2, 2], xlabel="x (m)", ylabel="z (m)", title="Inverted initial water depth temperature (cross-section)")
+	Colorbar(figI[2, 3], limits = temp_color_range, colormap = :bluesreds,
+    label = "Temperature (⚪ C)")
+	
+	heatmap!(axT0top, xpoints, ypoints, T₀.data[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = temp_color_range)
+	heatmap!(axT0side, xpoints, zpoints, T₀.data[1:Nx,Int(Ny/2),1:Nz], colormap=:bluesreds, colorrange = temp_color_range)
+	heatmap!(axTitop, xpoints, ypoints, Tᵢ[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = temp_color_range)
+	heatmap!(axTiside, xpoints, zpoints, Tᵢ[1:Nx,Int(Ny/2),1:Nz], colormap=:bluesreds, colorrange = temp_color_range)
+
+	figI
+end
 
 # ╔═╡ ca0ca8a0-1692-4cc0-8726-26de146051b7
 md"### Results
 
-Our first guess of constant -1 was *very* far off from the true initial temperature distribution, with a relative error of over 600%. After optimizing with gradient descent, our new guess has a much lower relative error of about 36%, but this is still a significant difference from the real value. Why?
+Our first guess of constant -1 was *very* far off from the true initial temperature distribution, with a relative error of nearly 300%. After optimizing with gradient descent, our new guess has a much lower relative error and mimics a lot of the features in the true initial temperature, but is still significantly different from the real value. Why?
 
-First, inferring parameters for something as complicated as an ocean/ice model is difficult. Usually a model such as this is ill-conditioned in some way"
+One problem is that our inverse problem is ill-conditioned. Since diffusion causes information to deteriorate over time, two different sets of initial temperatures can produce very similar results after a few time steps. Add in additional complexities like advection and successfully inverting for model parameters is a real challenge.
+
+Another issue is that basic gradient descent simply isn't a great optimization method. It can get trapped in local minima and either take too many iterations to optimize (if the learning rate is small) or 'overshoot` the desired result (if the learning rate is too big). More robust optimization methods using gradients or the Hessian exist that can mitigate these pitfalls.
+
+But even with some limitations, this tutorial outlines a basic workflow for solving inverse problems with AD! We created ice and ocean model objects using ClimaSeaIce and Oceananigans, generated synthetic data, and used gradient descent powered by Enzyme to create a decent guess for the initial water temperatures.
+
+### More things to try (if you have time):
+
+1. Try changing the `model` resolution by setting `Nx`, `Ny`, and `Nz` to different values (powers of 2 are most efficient with the Clima `models`). Alternatively, try running the forward model for more time steps by setting `n_max`.
+2. Try modifying the calculation for the misfit `J`, say by commenting out either the for loop computing temperature misfit or thickness misfit. One of those variables is far more valuable for inverting for initial temperature than the other!
+3. Change the function used to generate initial temperature data in `set_initial_temps!` (an alternative function is presented but commented out).
+4. Change the first guess for $T_i$ to try different starting points for the gradient descent optimization.
+5. (*A little trickier*) try modifying the for-loop in our gradient descent code to invert for the initial ice thickness $h_i$ instead of temperature. Currently we supply $h_0$ into our forward model at each iteration, but we could instead create an initial guess for $h_i$ and update that with gradient descent, similar to what we have for $T_i$."
 
 # ╔═╡ Cell order:
 # ╟─92d7f11a-6a68-4d2e-9a5f-ee0798528c43
@@ -527,10 +608,14 @@ First, inferring parameters for something as complicated as an ocean/ice model i
 # ╠═66bef546-fe87-4d73-b6b5-9a305bff3765
 # ╟─b5d3f15a-aafe-43c0-8c09-ca8e6c6cbc13
 # ╠═e0b647ee-827f-4bce-9b0c-244b7e55af75
+# ╟─5165efa2-4d84-4be4-9fb2-6c9a017cf7ca
 # ╠═44400683-d766-4fe1-b53b-03f5d2f60776
 # ╟─b7abbc43-4af1-4d20-9d01-14b28dc63cc0
 # ╠═35cdbc37-bff5-4f6c-a691-3feb984fe148
-# ╠═399fde4f-d981-45e6-9258-04befb36d9fc
-# ╠═934fb784-be1b-4b9d-ae5e-57ad07a38cfd
-# ╠═222416ae-1aa0-4f48-9e8d-3aabc34e21dd
-# ╠═ca0ca8a0-1692-4cc0-8726-26de146051b7
+# ╟─b891d28f-9268-439b-8ef7-7fb713cb2ce6
+# ╟─934fb784-be1b-4b9d-ae5e-57ad07a38cfd
+# ╟─0bfdd29e-6ab3-406c-9109-40422d059f74
+# ╟─222416ae-1aa0-4f48-9e8d-3aabc34e21dd
+# ╟─8ac54b9e-7a50-49ce-99ad-60244bb12c9d
+# ╟─9915a338-69d2-4fac-98d0-737bdfa69543
+# ╟─ca0ca8a0-1692-4cc0-8726-26de146051b7
