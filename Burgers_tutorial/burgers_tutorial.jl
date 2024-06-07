@@ -81,7 +81,10 @@ Enable the following cells only if you have a system with CUDA support.
 """
 
 # ╔═╡ 1d32785d-03d8-4309-aa19-f4031e371a29
+# ╠═╡ disabled = true
+#=╠═╡
 cua = adapt(CUDABackend(), a)
+  ╠═╡ =#
 
 # ╔═╡ 95f79fd5-0017-4862-a27a-ad4a37c7fedd
 md"""
@@ -89,7 +92,10 @@ Now we can do the sum on the GPU.
 """
 
 # ╔═╡ 127c3067-25b0-474b-993a-8b2db7c180a8
+# ╠═╡ disabled = true
+#=╠═╡
 cua .+ cua
+  ╠═╡ =#
 
 # ╔═╡ 0d88b56d-070c-403c-a17f-def34d87a335
 md"""
@@ -425,8 +431,11 @@ end
 # ╔═╡ 9f411195-2312-4385-924e-9bacecfd7fd2
 md"""
 # Differentiating Burgers using Enzyme
+"""
 
-Let's reset `burgers` and think. What happens if we differentiate `burgers_hd`?
+# ╔═╡ 1eb06eee-fc1a-4074-ba20-661757996659
+md"""
+Let's reset Burgers.
 """
 
 # ╔═╡ 7ff17e31-f755-4fc5-b66d-64965f92c6d7
@@ -435,26 +444,63 @@ set_bc!(burgers)
 set_ic!(burgers)
 end
 
-# ╔═╡ 7e173f65-238b-4a6b-b4ab-0da5c094e4ff
+# ╔═╡ af620e89-c59b-4d69-89ca-020d5d958810
+md"""
+Loading the tool 🔨
+"""
+
+# ╔═╡ 8112d5d6-151c-4b40-ac85-450786dff438
+begin
+surface(
+    range(-3, 3, length=burgers.nx-2),
+    range(-3, 3, length=burgers.ny-2),
+    velocity_magnitude(burgers);xlabel = "x", ylabel = "y", c = color,
+    legend=:none
+)
+end
+
+# ╔═╡ f152117a-578c-451f-86ce-4acd1a669bfd
+begin
+dburgers = Enzyme.make_zero(deepcopy(burgers))
+autodiff(ReverseWithPrimal, final_energy!, Active, Duplicated(burgers, dburgers))
+end
+
+# ╔═╡ 33c47fe9-6326-47df-8539-3999297298a9
+begin
+surface(
+    range(-3, 3, length=dburgers.nx-2),
+    range(-3, 3, length=dburgers.ny-2),
+    dburgers.lastu[2:end-1, 2:end-1] .^ 2 + dburgers.lastv[2:end-1, 2:end-1] .^ 2;
+	xlabel = "x", ylabel = "y", c = color,
+    legend=:none
+)
+end
+
+# ╔═╡ 3a4e997d-b002-4129-a69a-90bfe285f824
 md"""
 ## Checkpointing
+Let's reset `burgers` and think. What happens if we differentiate `burgers_hd`?
+
 If we differentiate through the entire model, every state $u$ and $v$ needs to be stored for computing the adjoint. Enzyme automatically takes care of this.
 
-
-
-With $1,000$ time steps and $1,000 \times 1,000$ grid points, this amounts to $10^9 \cdot 8$ bytes, or 32 GB.
+With $1,000$ time steps, $1,000 \times 1,000$ grid points and $4$ fields, this amounts to $4 \cdot 10^9 \cdot 8$ bytes, or 32 GB.
 
 Checkpointing is a technique for using recomputation to reduce memory load. It's a trade-off between memory requirement and runtime.
 """
 
-# ╔═╡ dba3c1e5-180e-4645-b408-3ec153561b0a
+# ╔═╡ d90ca551-d0c9-4f6d-b061-82c978350d61
 md"""$(LocalResource("checkpointing.png"))"""
 
-# ╔═╡ f152117a-578c-451f-86ce-4acd1a669bfd
-dburgers = Enzyme.make_zero(deepcopy(burgers))
+# ╔═╡ 1cbdba02-e68a-4307-b19e-08a7f2848fd6
+md"""
+Load the [Checkpointing.jl](https://github.com/Argonne-National-Laboratory/Checkpointing.jl) package.
+"""
 
-# ╔═╡ 826e779b-cc2c-4da1-9430-93dfa4641185
-autodiff(ReverseWithPrimal, final_energy!, Active, Duplicated(burgers, dburgers))
+
+# ╔═╡ fd8cd500-0442-4006-9e25-5e51e0e61770
+md"""
+The checkpointing scheme will be passed to the timestepping method as an additional argument. TODO
+"""
 
 # ╔═╡ 6dabc190-b86e-47e7-ae4b-c00a4f83fdd7
 function final_energy_chk!(burgers::Burgers, scheme)
@@ -464,8 +510,24 @@ function final_energy_chk!(burgers::Burgers, scheme)
     return energy(burgers)
 end
 
+# ╔═╡ d17ba6af-0ccc-4de5-9de5-9cefd4afa87c
+md"""
+We use the [Revolve](https://doi.org/10.1145/347837.347846) algorithm and set it up for `tsteps=10` timesteps and with a limit of 2 checkpoints.
+"""
+
 # ╔═╡ 6989b054-e102-4349-bbb4-f45fabfa4d3e
  revolve = Revolve{Burgers}(tsteps, 2; verbose = 1)
+
+# ╔═╡ 9092bf93-a2a5-46b5-9798-4adbadacf3f0
+md"""
+Instead of $10$ forward steps, we now do $10$ extra forward steps, leading to an overhead of $20/10=2$.
+TODO: fix overhead factor
+"""
+
+# ╔═╡ c2bbb137-50f0-4a5e-b68e-e35b665e06e1
+md"""
+Start the differentiation using Enzyme. The checkpointing scheme is passed as a Const or "non-active" variable.
+"""
 
 # ╔═╡ 42a682f0-6fc4-44ae-9c3f-1434a69f5ff6
 begin
@@ -473,49 +535,81 @@ begin
 	autodiff(ReverseWithPrimal, final_energy_chk!, Active, Duplicated(burgers, dburgers), Const(revolve))
 end
 
+# ╔═╡ 3db86c1b-6a9a-4855-8385-a0c2a8f073b6
+md"""
+The adjoint fields are stored in `dburgers` and store $du/dJ$, $dv/dJ$. We then compute the "adjoint velocity magnitude" $(dJ/du)^2 + (dJ/dv)^2$.
+"""
+
 # ╔═╡ 5beb4b8b-2c08-440a-a275-12fba8bbd852
-begin
-burgers_long = Burgers(Nx, Ny, μ, dx, dy, dt, 1000)
-set_ic!(burgers_long)
-set_bc!(burgers_long)
-final_energy_chk!(burgers_long, revolve)
-end
-
-# ╔═╡ 9c5f3dbe-598c-4160-875f-51de499aba05
 surface(
-    range(-3, 3, length=burgers_long.nx-2),
-    range(-3, 3, length=burgers_long.ny-2),
-    velocity_magnitude(burgers_long);xlabel = "x", ylabel = "y", c = color,
-    legend=:none
-)
-
-# ╔═╡ 389a874b-a855-47eb-a23c-80e2f5e7f027
-begin
-	set_ic!(burgers_long)
-	set_bc!(burgers_long)
-	dburgers_long = Enzyme.make_zero(deepcopy(burgers_long))
-end
-
-# ╔═╡ f2505bc2-64da-4264-a919-85e58f8d1da1
-revolve_long = Revolve{Burgers}(1000, 100; verbose = 1)
-
-# ╔═╡ 7cd9b223-ebc0-47d3-8272-444288f9e9dd
-begin
-	reset!(revolve_long)
-	autodiff(ReverseWithPrimal, final_energy_chk!, Active, Duplicated(burgers_long, dburgers_long), Const(revolve_long))
-end
-
-# ╔═╡ eea27917-0307-4a51-b3e6-1f050c46f06a
-surface(
-    range(-3, 3, length=dburgers_long.nx-2),
-    range(-3, 3, length=dburgers_long.ny-2),
+    range(-3, 3, length=burgers.nx-2),
+    range(-3, 3, length=burgers.ny-2),
     dburgers.lastu[2:end-1, 2:end-1] .^ 2 + dburgers.lastv[2:end-1, 2:end-1] .^ 2;
 	xlabel = "x", ylabel = "y", c = color,
     legend=:none
 )
 
-# ╔═╡ 7e2ed6b7-d975-4f98-8aa8-d2405440b192
-dburgers_long.lastu
+# ╔═╡ caaef553-35cc-4984-9dcd-bc057bb93cf2
+md"""
+Let's do the high-resolution example
+"""
+
+# ╔═╡ b06b03fb-9be6-4077-8640-3a5dae4d7980
+begin
+set_bc!(burgers_hd)
+set_ic!(burgers_hd)
+dburgers_hd = Enzyme.make_zero(deepcopy(burgers_hd))
+revolve_hd = Revolve{Burgers}(1000, 10; verbose = 1)
+autodiff(ReverseWithPrimal, final_energy_chk!, Active, Duplicated(burgers_hd, dburgers_hd), Const(revolve_hd))
+end
+
+# ╔═╡ 9c5f3dbe-598c-4160-875f-51de499aba05
+surface(
+    range(-3, 3, length=burgers_hd.nx-2),
+    range(-3, 3, length=burgers_hd.ny-2),
+	dburgers_hd.lastu[2:end-1, 2:end-1] .^ 2 + dburgers_hd.lastv[2:end-1, 2:end-1] .^ 2;
+    xlabel = "x", ylabel = "y", c = color,
+    legend=:none, camera = (120, 30)
+)
+
+# ╔═╡ 871a7d07-2417-4e73-a9b9-5d7916edb167
+md"""
+We computed the adjoint field with checkpointing and Enzyme using only 10 checkpoints, or 40 fields and 305MB of storage, a factor of 100 less than 30GB. This leads to a slowdown of only around 3. For details see this [paper](https://doi.org/10.1007/978-3-031-36024-4_37).
+"""
+
+# ╔═╡ fef27b29-d3f0-46d1-a054-fc01ef7b84ee
+md"""
+# Bonus and Outlook
+
+If you have a CUDA supported GPU you can run Burgers on a CUDA GPU.
+"""
+
+# ╔═╡ 53e470c0-4f3b-4fc2-ad37-f2a4cd1d47c0
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	cu_burgers = Burgers(1000, 1000, μ, 1e-2, 1e-2, dt, 1000, CUDABackend())
+	set_ic!(cu_burgers)
+	set_bc!(cu_burgers)
+	final_energy!(cu_burgers)
+	# Transfer to host for plotting
+	nextu = adapt(CPU(), cu_burgers.nextu)
+	nextv = adapt(CPU(), cu_burgers.nextv)
+	
+	surface(
+		range(-3, 3, length=cu_burgers.nx-2),
+		range(-3, 3, length=cu_burgers.ny-2),
+		nextu[2:end-1, 2:end-1] .^ 2 .+ nextv[2:end-1, 2:end-1] .^2,
+		xlabel = "x", ylabel = "y", c = color,
+	    legend=:none
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ afab0c0a-a85e-4c00-ad8b-b20897d65134
+md"""
+Transparent support of Enzyme for GPUs using KernelAbstractions is in the making! 🐛🪲🪳
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2045,7 +2139,7 @@ version = "1.4.1+1"
 # ╠═a25e3d03-8eed-4a0b-9fd7-c5e30f9c8f1c
 # ╟─eabb6565-946f-4e00-a3ac-9ef33d05c594
 # ╠═4b4f81f6-6ff0-430f-8a86-965d4a41044d
-# ╠═664315e2-b4db-41ad-82d1-3039454fed1e
+# ╟─664315e2-b4db-41ad-82d1-3039454fed1e
 # ╠═9c21cfa8-0db3-4d74-9465-75bf25b15a5b
 # ╟─903d9b69-0e12-4591-8249-82b78a93d83e
 # ╟─12dfa763-b307-4f76-9a0d-5b24e6130da9
@@ -2061,7 +2155,7 @@ version = "1.4.1+1"
 # ╠═c5feb1d9-4703-49a2-bedc-b996887f4d91
 # ╟─c072dbfe-4866-4fd6-94b6-069c2deb29d5
 # ╟─50c2b95a-9e72-48b9-879b-d31a70c0f6cb
-# ╠═78e3b07f-f99a-4bfc-b42d-008c9417a14c
+# ╟─78e3b07f-f99a-4bfc-b42d-008c9417a14c
 # ╠═01549692-94ba-4119-b259-052be74fc4b0
 # ╟─c001200e-392e-4bd5-bf89-2b3b81e1a31f
 # ╠═bc294229-2b02-4b19-8f1b-71348793b323
@@ -2069,23 +2163,33 @@ version = "1.4.1+1"
 # ╟─b8201b3f-5187-4fdd-86a2-feb4e1d4f05b
 # ╠═a9814ad4-7c9b-4c25-8fa4-b1683ad9be82
 # ╟─9f411195-2312-4385-924e-9bacecfd7fd2
+# ╟─1eb06eee-fc1a-4074-ba20-661757996659
 # ╠═7ff17e31-f755-4fc5-b66d-64965f92c6d7
 # ╠═bd0d9801-9d0d-4bee-beea-131439c262cc
-# ╟─7e173f65-238b-4a6b-b4ab-0da5c094e4ff
-# ╟─dba3c1e5-180e-4645-b408-3ec153561b0a
+# ╟─af620e89-c59b-4d69-89ca-020d5d958810
 # ╠═06f23f52-0fcc-4707-b06c-80f4529b506d
+# ╠═8112d5d6-151c-4b40-ac85-450786dff438
 # ╠═f152117a-578c-451f-86ce-4acd1a669bfd
-# ╠═826e779b-cc2c-4da1-9430-93dfa4641185
+# ╠═33c47fe9-6326-47df-8539-3999297298a9
+# ╟─3a4e997d-b002-4129-a69a-90bfe285f824
+# ╟─d90ca551-d0c9-4f6d-b061-82c978350d61
+# ╟─1cbdba02-e68a-4307-b19e-08a7f2848fd6
 # ╠═cd9ef5ba-5e59-43ed-82d1-588dc7effefe
+# ╟─fd8cd500-0442-4006-9e25-5e51e0e61770
 # ╠═6dabc190-b86e-47e7-ae4b-c00a4f83fdd7
+# ╟─d17ba6af-0ccc-4de5-9de5-9cefd4afa87c
 # ╠═6989b054-e102-4349-bbb4-f45fabfa4d3e
+# ╟─9092bf93-a2a5-46b5-9798-4adbadacf3f0
+# ╟─c2bbb137-50f0-4a5e-b68e-e35b665e06e1
 # ╠═42a682f0-6fc4-44ae-9c3f-1434a69f5ff6
+# ╟─3db86c1b-6a9a-4855-8385-a0c2a8f073b6
 # ╠═5beb4b8b-2c08-440a-a275-12fba8bbd852
+# ╟─caaef553-35cc-4984-9dcd-bc057bb93cf2
+# ╠═b06b03fb-9be6-4077-8640-3a5dae4d7980
 # ╠═9c5f3dbe-598c-4160-875f-51de499aba05
-# ╠═389a874b-a855-47eb-a23c-80e2f5e7f027
-# ╠═f2505bc2-64da-4264-a919-85e58f8d1da1
-# ╠═7cd9b223-ebc0-47d3-8272-444288f9e9dd
-# ╠═eea27917-0307-4a51-b3e6-1f050c46f06a
-# ╠═7e2ed6b7-d975-4f98-8aa8-d2405440b192
+# ╟─871a7d07-2417-4e73-a9b9-5d7916edb167
+# ╟─fef27b29-d3f0-46d1-a054-fc01ef7b84ee
+# ╠═53e470c0-4f3b-4fc2-ad37-f2a4cd1d47c0
+# ╟─afab0c0a-a85e-4c00-ad8b-b20897d65134
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
