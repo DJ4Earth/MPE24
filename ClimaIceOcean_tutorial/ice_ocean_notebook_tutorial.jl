@@ -211,7 +211,7 @@ begin
 	    amplitude   = Ref(1)
 	    width       = 0.1
 	    #Tᵢ(x, y, z) = amplitude[] * exp(-z^2 / (2width^2)  - (x^2 + y^2) / 0.05)
-		Tᵢ(x, y, z) = amplitude[] * exp(-z^2 / (2width^2)) * sin((x^2 + y^2) / 0.05)
+		Tᵢ(x, y, z) = amplitude[] * exp(-z^2 / (2width^2)) * sin((x^2 + y^2) / 0.05) + 0.05 .* randn()
 	
 	    set!(ocean_model, T=Tᵢ)
 	
@@ -278,7 +278,7 @@ md"Then we can call `ice_ocean_data` and get the true initial water temperature 
 T₀, Tₙ, h₀, hₙ = ice_ocean_data(ocean_model, ice_model, κ, n_max)
 
 # ╔═╡ 023737b6-401f-4ebf-8295-a2d783400a40
-md"Here we plot the initial temperature along the surface and a cross section through the depth. Note how it fluctuates in circles near the surface and becomes constant at greater depths."
+md"Here we plot the initial temperature along the surface and a cross section through the depth. Note how it fluctuates in circles near the surface and becomes constant at greater depths. There's also a little temperature variance throughout from gaussian noise added to the initial condition."
 
 # ╔═╡ 042ee0ec-58b2-470d-84f5-302c87a88281
 begin
@@ -304,7 +304,7 @@ begin
 end
 
 # ╔═╡ aa51161a-f1b6-4389-a9f8-b5c3ac1bc63e
-md"These are the same plots for the final temperature. We can see how the current distorted the temperature field via advection, and how the colder water at the middle of the surface started to diffuse."
+md"These are the same plots for the final temperature. We can see how the current distorted the temperature field via advection, and how the colder water at the middle of the surface started to diffuse. Diffusion also eliminated most (if not all) of the temperature noise."
 
 # ╔═╡ d6e9261a-5455-4bdf-86cd-dc52d70411fa
 begin
@@ -324,7 +324,7 @@ begin
 end
 
 # ╔═╡ 39555d5c-b20e-4058-a0d0-846723560fbb
-md"Lastly, we have plots of the initial and final ice thickness. There's a little melt along the egdes of the ice flow:"
+md"Lastly, we have plots of the initial and final ice thickness. There's a little melt along the egdes of the ice flow, shown by the slightly darker cells."
 
 # ╔═╡ 843067f7-034f-4483-bcec-0b99af8b0862
 begin
@@ -534,7 +534,7 @@ begin
 end
 
 # ╔═╡ 8ac54b9e-7a50-49ce-99ad-60244bb12c9d
-md"And the big test... how does our inverted-for initial temperature field compare to the true one? Note that these plots use the same temperature scales and colorbar. Although the exact temperatures are different, pretty much all of the features in our initial temperature field are represented in the inverted one. But there are a few clear errors to: for example, at greater depths there's a faint temperature oscillation that isn't present in the true data:"
+md"And the big test... how does our inverted-for initial temperature field compare to the true one? Note that these plots use the same temperature scales and colorbar. Although the exact temperatures are different, pretty much all of the features in our initial temperature field are represented in the inverted one. But there are a few clear errors too: for example, at greater depths there's a faint temperature oscillation that isn't present in the true data. Variance from the added noise to the initial condition might be approximated to an extent, but not closely."
 
 # ╔═╡ 9915a338-69d2-4fac-98d0-737bdfa69543
 begin
@@ -564,7 +564,7 @@ md"### Results
 
 Our first guess of constant -1 was *very* far off from the true initial temperature distribution, with a relative error of nearly 300%. After optimizing with gradient descent, our new guess has a much lower relative error and mimics a lot of the features in the true initial temperature, but is still significantly different from the real value. Why?
 
-One problem is that our inverse problem is ill-conditioned. Since diffusion causes information to deteriorate over time, two different sets of initial temperatures can produce very similar results after a few time steps. Add in additional complexities like advection and successfully inverting for model parameters is a real challenge.
+One problem is that our inverse problem is ill-conditioned. Since diffusion causes information to deteriorate over time, two different sets of initial temperatures can produce very similar results after several time steps. Add in additional complexities like advection and successfully inverting for model parameters is a real challenge.
 
 Another issue is that basic gradient descent simply isn't a great optimization method. It can get trapped in local minima and either take too many iterations to optimize (if the learning rate is small) or 'overshoot` the desired result (if the learning rate is too big). More robust optimization methods using gradients or the Hessian exist that can mitigate these pitfalls.
 
@@ -581,7 +581,7 @@ But even with some limitations, this tutorial outlines a basic workflow for solv
 # ╔═╡ Cell order:
 # ╟─92d7f11a-6a68-4d2e-9a5f-ee0798528c43
 # ╟─32388534-3ac7-497d-a933-086100ff0c20
-# ╠═9afd85ee-b9de-4629-b9a8-3ce6ea0f10db
+# ╟─9afd85ee-b9de-4629-b9a8-3ce6ea0f10db
 # ╟─3adeeda5-7db4-4d38-a0c4-2adee41c14e8
 # ╠═071a8881-0be3-4052-9c28-bc76057b6b5a
 # ╟─9637e4af-6176-490d-9c96-c2d3b2a7b32d
