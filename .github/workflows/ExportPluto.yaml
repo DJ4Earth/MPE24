@@ -21,6 +21,9 @@ permissions:
 
 jobs:
     build-and-deploy:
+        environment:
+          name: github-pages
+          url: ${{ steps.deployment.outputs.page_url }}
         runs-on: ubuntu-latest
         steps:
             - name: Checkout this repository
@@ -74,4 +77,5 @@ jobs:
                 path: .
 
             - name: Deploy GitHub Pages site
+              id: deployment
               uses: actions/deploy-pages@v4
