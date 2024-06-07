@@ -97,6 +97,11 @@ Now we can do the sum on the GPU.
 cua .+ cua
   ╠═╡ =#
 
+# ╔═╡ cb27823a-dc0d-4953-8a9e-265ab0c7b7e0
+md"""
+If the above lines worked, you've just run a CUDA kernel from Julia.
+"""
+
 # ╔═╡ 0d88b56d-070c-403c-a17f-def34d87a335
 md"""
 # Datastructures
@@ -2126,6 +2131,7 @@ version = "1.4.1+1"
 # ╠═1d32785d-03d8-4309-aa19-f4031e371a29
 # ╟─95f79fd5-0017-4862-a27a-ad4a37c7fedd
 # ╠═127c3067-25b0-474b-993a-8b2db7c180a8
+# ╠═cb27823a-dc0d-4953-8a9e-265ab0c7b7e0
 # ╟─0d88b56d-070c-403c-a17f-def34d87a335
 # ╠═ddf67473-5f5f-44b2-bd40-415772f5aead
 # ╟─feb5a4ce-f32e-4f72-94c9-a39460a6866e
