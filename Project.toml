@@ -1,4 +1,6 @@
 [deps]
-DJUICE = "1cb5fe60-6b70-416b-9050-039c23a62a10"
-MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
+
+[compat]
+julia = "1.10"
+Pluto = "0.19"
