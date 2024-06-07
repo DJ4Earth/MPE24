@@ -72,12 +72,12 @@ begin
 	arch = Oceananigans.CPU()
 	
 	# Next we set the spatial resolution of the problem. We'll keep this low so it can be run locally:
-	Nx = Ny = 32
+	Nx = Ny = 16
 	Nz = 16
 	
 	# Here we set the horizontal and vertical distances of the problem:
 	x = y = (-π, π)
-	z = (-0.5, 0.5)
+	z = (-1.0, 0)
 	topology = (Bounded, Bounded, Bounded)
 	
 	# Here we specify the grid - the spatial discretization of our model:
@@ -210,7 +210,8 @@ begin
 	function set_initial_temps!(ocean_model)
 	    amplitude   = Ref(1)
 	    width       = 0.1
-	    Tᵢ(x, y, z) = amplitude[] * exp(-z^2 / (2width^2)  - (x^2 + y^2) / 0.05)
+	    #Tᵢ(x, y, z) = amplitude[] * exp(-z^2 / (2width^2)  - (x^2 + y^2) / 0.05)
+		Tᵢ(x, y, z) = amplitude[] * exp(-z^2 / (2width^2)) * sin((x^2 + y^2) / 0.05)
 	
 	    set!(ocean_model, T=Tᵢ)
 	
@@ -276,30 +277,72 @@ md"Then we can call `ice_ocean_data` and get the true initial water temperature 
 # ╔═╡ 045b79be-be33-4f17-b142-5f5b82c9e1f1
 T₀, Tₙ, h₀, hₙ = ice_ocean_data(ocean_model, ice_model, κ, n_max)
 
+# ╔═╡ 023737b6-401f-4ebf-8295-a2d783400a40
+md"Here we plot the initial temperature along the surface and a cross section through the depth. Note how it fluctuates in circles near the surface and becomes constant at greater depths."
+
 # ╔═╡ 042ee0ec-58b2-470d-84f5-302c87a88281
 begin
 	@show T₀
 	xpoints = xnodes(grid, Center())
-	ypoints = ynodes(grid, Center())	
-	heatmap(xpoints, ypoints, T₀.data[0:Nx,0:Ny,Nz], colormap=:bluesreds, colorrange = (-5, 5))
+	ypoints = ynodes(grid, Center())
+	zpoints = znodes(grid, Center())
+
+	figsize = (1000, 500)
+	temp_color_range = (-3, 3)
+
+	fig = Figure(size=figsize)
+	
+	axTtop = Axis(fig[1, 1], xlabel="x (m)", ylabel="y (m)", title="Initial water surface Temperature")
+	axTside = Axis(fig[1, 2], xlabel="x (m)", ylabel="z (m)", title="Initial water depth temperature (cross-section)")
+	Colorbar(fig[1, 3], limits = temp_color_range, colormap = :bluesreds,
+    label = "Temperature (⚪ C)")
+	
+	heatmap!(axTtop, xpoints, ypoints, T₀.data[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = temp_color_range)
+	heatmap!(axTside, xpoints, zpoints, T₀.data[1:Nx,Int(Ny/2),1:Nz], colormap=:bluesreds, colorrange = temp_color_range)
+
+	fig
 end
+
+# ╔═╡ aa51161a-f1b6-4389-a9f8-b5c3ac1bc63e
+md"These are the same plots for the final temperature. We can see how the current distorted the temperature field via advection, and how the colder water at the middle of the surface started to diffuse."
 
 # ╔═╡ d6e9261a-5455-4bdf-86cd-dc52d70411fa
 begin
 	@show Tₙ
-	heatmap(xpoints, ypoints, Tₙ.data[0:Nx,0:Ny,Nz], colormap=:bluesreds, colorrange = (-5, 5))
+
+	fign = Figure(size=figsize)
+	
+	axTntop = Axis(fign[1, 1], xlabel="x (m)", ylabel="y (m)", title="Final water surface Temperature")
+	axTnside = Axis(fign[1, 2], xlabel="x (m)", ylabel="z (m)", title="Final water depth temperature (cross-section)")
+	Colorbar(fign[1, 3], limits = temp_color_range, colormap = :bluesreds,
+    label = "Temperature (⚪ C)")
+	
+	heatmap!(axTntop, xpoints, ypoints, Tₙ.data[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = temp_color_range)
+	heatmap!(axTnside, xpoints, zpoints, Tₙ.data[1:Nx,Int(Ny/2),1:Nz], colormap=:bluesreds, colorrange = temp_color_range)
+
+	fign
 end
+
+# ╔═╡ 39555d5c-b20e-4058-a0d0-846723560fbb
+md"Lastly, we have plots of the initial and final ice thickness. There's a little melt along the egdes of the ice flow:"
 
 # ╔═╡ 843067f7-034f-4483-bcec-0b99af8b0862
 begin
-	@show h₀
-	heatmap(xpoints, ypoints, h₀.data[0:Nx,0:Ny], colormap=:grays, colorrange = (0, 0.05))
-end
+	@show h₀, hₙ
 
-# ╔═╡ d7d5d9ac-0f13-40fc-98be-0427f4863dc8
-begin
-	@show hₙ
-	heatmap(xpoints, ypoints, hₙ.data[0:Nx,0:Ny], colormap=:grays, colorrange = (0, 0.05))
+	figh = Figure(size=figsize)
+	ice_color_range = (0, 0.05)
+	
+	axH0 = Axis(figh[1, 1], xlabel="x (m)", ylabel="y (m)", title="Initial ice thickness")
+	axHn = Axis(figh[1, 2], xlabel="x (m)", ylabel="y (m)", title="Final ice thickness")
+	Colorbar(figh[1, 3], limits = ice_color_range, colormap = :grays,
+    label = "Ice thickness (m)")
+	
+	
+	heatmap!(axH0, xpoints, ypoints, h₀.data[1:Nx,1:Ny], colormap=:grays, colorrange = ice_color_range)
+	heatmap!(axHn, xpoints, ypoints, hₙ.data[1:Nx,1:Ny], colormap=:grays, colorrange = ice_color_range)
+
+	figh
 end
 
 # ╔═╡ 76727025-342d-4cec-b632-e66e2b655ff1
@@ -323,7 +366,6 @@ begin
 	function ice_ocean_model(ocean_model, ice_model, diffusivity, n_max, Tᵢ, Tₙ, hᵢ, hₙ)
 	    set_diffusivity!(ocean_model, diffusivity)
 	    set_initial_condition!(ocean_model, Tᵢ)
-	
 	    set!(ice_model, h=hᵢ)
 	    
 	    # Run the forward model:
@@ -377,13 +419,16 @@ First, let's set an initial guess for $T_i$ - a constant array of value -1 seems
 # ╔═╡ e0b647ee-827f-4bce-9b0c-244b7e55af75
 begin
 	
-	Tᵢ = -1 .+ zeros(size(ocean_model.tracers.T))
+	Tᵢ = -1.0 .+ zeros(size(ocean_model.tracers.T))
 	
 	set!(ice_model, h=h₀)
 	
 	learning_rate = 0.2
 	max_steps = 80
 end
+
+# ╔═╡ 44400683-d766-4fe1-b53b-03f5d2f60776
+heatmap(xpoints, ypoints, Tᵢ[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = (-5, 5))
 
 # ╔═╡ b7abbc43-4af1-4d20-9d01-14b28dc63cc0
 md"### Step 6: Run the inverse problem
@@ -398,7 +443,7 @@ Since we're inverting for $T_i$, we're only interested in the shadow $dT_i$. We 
 "
 
 # ╔═╡ 35cdbc37-bff5-4f6c-a691-3feb984fe148
-#=
+
 # Update our guess of the initial tracer distribution, cᵢ:
 for i = 1:max_steps
 	# Create shadows and set all their values to 0:
@@ -413,9 +458,9 @@ for i = 1:max_steps
     dice_model.heat_boundary_conditions = (top = PrescribedTemperature{Int64}(0), bottom = IceWaterThermalEquilibrium{ConstantField{Int64, 3}}(ConstantField(0)))
     dice_model.top_surface_temperature  = ConstantField(0)
     
-    # Since we are only interested in duplicated variable cᵢ for this run,
+    # Since we are only interested in duplicated variable Tᵢ for this run,
     # we do not use dJ here:
-    #=
+    
     dJ = autodiff(Enzyme.Reverse,
                     ice_ocean_model,
                     Duplicated(ocean_model, docean_model),
@@ -427,19 +472,23 @@ for i = 1:max_steps
                     Duplicated(h₀, dhᵢ),
                     Duplicated(hₙ, dhₙ))
 	
-    =#
+    
     @show i
     @show norm(dTᵢ)
     global Tᵢ .= Tᵢ .- (dTᵢ .* learning_rate)
     @show (norm(Tᵢ - T₀) / norm(T₀))
     
 end
-=#
+
 
 # ╔═╡ 399fde4f-d981-45e6-9258-04befb36d9fc
-begin
-	heatmap(xpoints, ypoints, Tᵢ[1:Nx,1:Ny,Nz])
-end
+heatmap(xpoints, ypoints, Tᵢ[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = temp_color_range)
+
+# ╔═╡ 934fb784-be1b-4b9d-ae5e-57ad07a38cfd
+heatmap(xpoints, zpoints, Tᵢ[1:Nx,Int(Ny/2),1:Nz], colormap=:bluesreds, colorrange = temp_color_range)
+
+# ╔═╡ 222416ae-1aa0-4f48-9e8d-3aabc34e21dd
+heatmap(xpoints, ypoints, ocean_model.tracers.T.data[1:Nx,1:Ny,Nz], colormap=:bluesreds, colorrange = (-5, 5))
 
 # ╔═╡ ca0ca8a0-1692-4cc0-8726-26de146051b7
 md"### Results
@@ -468,15 +517,20 @@ First, inferring parameters for something as complicated as an ocean/ice model i
 # ╠═7cc53014-2395-4357-bbbb-d2d7eff59e20
 # ╠═0b04432b-0e5d-4d99-9808-0a1ad7765f72
 # ╠═045b79be-be33-4f17-b142-5f5b82c9e1f1
-# ╠═042ee0ec-58b2-470d-84f5-302c87a88281
-# ╠═d6e9261a-5455-4bdf-86cd-dc52d70411fa
-# ╠═843067f7-034f-4483-bcec-0b99af8b0862
-# ╠═d7d5d9ac-0f13-40fc-98be-0427f4863dc8
+# ╟─023737b6-401f-4ebf-8295-a2d783400a40
+# ╟─042ee0ec-58b2-470d-84f5-302c87a88281
+# ╟─aa51161a-f1b6-4389-a9f8-b5c3ac1bc63e
+# ╟─d6e9261a-5455-4bdf-86cd-dc52d70411fa
+# ╟─39555d5c-b20e-4058-a0d0-846723560fbb
+# ╟─843067f7-034f-4483-bcec-0b99af8b0862
 # ╟─76727025-342d-4cec-b632-e66e2b655ff1
 # ╠═66bef546-fe87-4d73-b6b5-9a305bff3765
 # ╟─b5d3f15a-aafe-43c0-8c09-ca8e6c6cbc13
 # ╠═e0b647ee-827f-4bce-9b0c-244b7e55af75
+# ╠═44400683-d766-4fe1-b53b-03f5d2f60776
 # ╟─b7abbc43-4af1-4d20-9d01-14b28dc63cc0
 # ╠═35cdbc37-bff5-4f6c-a691-3feb984fe148
 # ╠═399fde4f-d981-45e6-9258-04befb36d9fc
+# ╠═934fb784-be1b-4b9d-ae5e-57ad07a38cfd
+# ╠═222416ae-1aa0-4f48-9e8d-3aabc34e21dd
 # ╠═ca0ca8a0-1692-4cc0-8726-26de146051b7
