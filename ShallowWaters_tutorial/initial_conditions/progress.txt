@@ -1,0 +1,33 @@
+Starting ShallowWaters run 1 on Fri, 31 May 2024 12:48:41
+Model will integrate 1.0days at a resolution of 128x128 with Δ=30.0km
+Initial conditions are last time step of run 0.
+Boundary conditions are nonperiodic with lbc=2.0.
+Number format is Float32.
+
+All data will be stored in /Users/swilliamson/Documents/GitHub/enzyme_tutorial_pluto/run_0001
+
+Model integration will take approximately 0.00s,
+and is hopefully done on Fri, 31 May 2024 12:48:41
+
+5%
+10%
+15%
+20%
+25%
+30%
+35%
+40%
+45%
+50%
+55%
+60%
+65%
+70%
+75%
+80%
+85%
+90%
+95%
+100%
+Integration done in 0.59s.
+All data stored.
