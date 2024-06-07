@@ -12,7 +12,7 @@ begin
     Pkg.add([
 		Pkg.PackageSpec(name="ClimaSeaIce", rev="jlk9/mutable-slabseaicemodel"),
         Pkg.PackageSpec(name="Enzyme", version="0.12.8"),
-        Pkg.PackageSpec(name="KernelAbstractions", version="0.9.19"),
+        Pkg.PackageSpec(name="KernelAbstractions", version="0.9.20"),
         Pkg.PackageSpec(name="Oceananigans", rev="jlk9/stabilize-tuple-in-permute-boundary-conditions"),
 		Pkg.PackageSpec(name="GLMakie")
     ])
