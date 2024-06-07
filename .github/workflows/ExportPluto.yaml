@@ -13,7 +13,10 @@ concurrency:
 
 # This action needs permission to write the exported HTML file to the gh-pages branch.
 permissions:
-    contents: write
+    actions: write
+    contents: read
+    pages: write
+    id-token: write
     # (all other permission fields default to "none")
 
 jobs:
