@@ -1,6 +1,13 @@
 ### A Pluto.jl notebook ###
 # v0.19.42
 
+#> [frontmatter]
+#> title = "Adjoint derivatives tutorial: A shallow water model"
+#> date = "2024-06-11"
+#> 
+#>     [[frontmatter.author]]
+#>     name = "Sarah M. Williamson"
+
 using Markdown
 using InteractiveUtils
 

@@ -1,6 +1,14 @@
 ### A Pluto.jl notebook ###
 # v0.19.42
 
+#> [frontmatter]
+#> title = "02 - Burgers Equation"
+#> date = "2024-06-11"
+#> description = "Differentiation of 2D Burgers using Enzyme"
+#> 
+#>     [[frontmatter.author]]
+#>     name = "Michel Schanen"
+
 using Markdown
 using InteractiveUtils
 

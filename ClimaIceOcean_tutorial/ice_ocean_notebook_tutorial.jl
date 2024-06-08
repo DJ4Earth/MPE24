@@ -1,6 +1,15 @@
 ### A Pluto.jl notebook ###
 # v0.19.42
 
+#> [frontmatter]
+#> title = "Ocean Sea-Ice Inverse Problem"
+#> date = "2024-06-11"
+#> license = "MIT"
+#> 
+#>     [[frontmatter.author]]
+#>     name = "Joseph L. Kump"
+#>     affiliation = "University of Texas, U.S."
+
 using Markdown
 using InteractiveUtils
 
