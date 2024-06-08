@@ -1,6 +1,12 @@
 ### A Pluto.jl notebook ###
 # v0.19.42
 
+#> [frontmatter]
+#> title = "DJUICE: Pine Island Glacier"
+#> 
+#>     [[frontmatter.author]]
+#>     name = "Gong Cheng"
+
 using Markdown
 using InteractiveUtils
 

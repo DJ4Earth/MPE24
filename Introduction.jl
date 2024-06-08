@@ -1,6 +1,17 @@
 ### A Pluto.jl notebook ###
 # v0.19.42
 
+#> [frontmatter]
+#> title = "01 -- Introduction to Julia"
+#> date = "2024-06-11"
+#> license = "MIT"
+#> tags = ["Differentiable Programming in Julia with Enzyme"]
+#> 
+#>     [[frontmatter.author]]
+#>     name = "Valentin Churavy"
+#>     affiliation = "Massachussetts Institute of Technology"
+#>     url = "https://vchuravy.dev"
+
 using Markdown
 using InteractiveUtils
 
