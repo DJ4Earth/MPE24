@@ -1,5 +1,7 @@
 # SIAM Conference on Mathematics of Planet Earth (MPE24): Material for minitutorials
 
+To find the rendewred notebooks: https://dj4earth.github.io/MPE24/
+
 ## Requirements
 For the tutorials we will use [Pluto.jl](https://plutojl.org/) notebooks in [Julia](https://julialang.org/).
 
