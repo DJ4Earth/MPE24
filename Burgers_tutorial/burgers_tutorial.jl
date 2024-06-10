@@ -437,16 +437,16 @@ Let's crank up the resolution and number of timesteps.
 
 # ╔═╡ a9814ad4-7c9b-4c25-8fa4-b1683ad9be82
 begin
-burgers_hd = Burgers(1000, 1000, μ, 1e-2, 1e-2, dt, 1000)
-set_ic!(burgers_hd)
-set_bc!(burgers_hd)
-final_energy!(burgers_hd)
-surface(
-	range(-3, 3, length=burgers_hd.nx-2),
-	range(-3, 3, length=burgers_hd.ny-2),
-	velocity_magnitude(burgers_hd);
-	axis=(type=Axis3,),
-)
+	burgers_hd = Burgers(1000, 1000, μ, 1e-2, 1e-2, dt, 1000)
+	set_ic!(burgers_hd)
+	set_bc!(burgers_hd)
+	final_energy!(burgers_hd)
+	surface(
+		range(-3, 3, length=burgers_hd.nx-2),
+		range(-3, 3, length=burgers_hd.ny-2),
+		velocity_magnitude(burgers_hd);
+		axis=(type=Axis3,),
+	)
 end
 
 # ╔═╡ 9f411195-2312-4385-924e-9bacecfd7fd2
@@ -480,8 +480,8 @@ surface(
 
 # ╔═╡ f152117a-578c-451f-86ce-4acd1a669bfd
 begin
-dburgers = Enzyme.make_zero(deepcopy(burgers))
-autodiff(ReverseWithPrimal, final_energy!, Active, Duplicated(burgers, dburgers))
+	dburgers = Enzyme.make_zero(deepcopy(burgers))
+	autodiff(ReverseWithPrimal, final_energy!, Active, Duplicated(burgers, dburgers))
 end
 
 # ╔═╡ 33c47fe9-6326-47df-8539-3999297298a9
@@ -572,11 +572,11 @@ Let's do the high-resolution example
 
 # ╔═╡ b06b03fb-9be6-4077-8640-3a5dae4d7980
 begin
-set_bc!(burgers_hd)
-set_ic!(burgers_hd)
-dburgers_hd = Enzyme.make_zero(deepcopy(burgers_hd))
-revolve_hd = Revolve{Burgers}(1000, 10; verbose = 1)
-autodiff(ReverseWithPrimal, final_energy_chk!, Active, Duplicated(burgers_hd, dburgers_hd), Const(revolve_hd))
+	set_bc!(burgers_hd)
+	set_ic!(burgers_hd)
+	dburgers_hd = Enzyme.make_zero(deepcopy(burgers_hd))
+	revolve_hd = Revolve{Burgers}(1000, 10; verbose = 1)
+	autodiff(ReverseWithPrimal, final_energy_chk!, Active, Duplicated(burgers_hd, dburgers_hd), Const(revolve_hd))
 end
 
 # ╔═╡ 9c5f3dbe-598c-4160-875f-51de499aba05
