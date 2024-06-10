@@ -15,6 +15,16 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
 # ╔═╡ c4c4ca62-2d63-4876-9027-9ca7f0d6cb37
 using PlutoUI
 
@@ -29,6 +39,12 @@ using Enzyme
 
 # ╔═╡ 07df2151-525e-4fdd-a66a-db211bf02932
 using Optim
+
+# ╔═╡ 1195dec8-2d9b-4bae-a2b6-c0835ad6e27b
+begin
+	using BenchmarkTools
+	using Unitful
+end
 
 # ╔═╡ 9b96d09c-9c41-42ab-b2cf-a70669647bc8
 md"""
@@ -79,6 +95,59 @@ Pragmatic for many applications, but has drawbacks
 - prohibits full stack optimisations
 """
 
+# ╔═╡ 73f61e66-5217-4fac-9607-cf2dc3889a39
+md"""
+## A brief introduction to Julia
+"""
+
+# ╔═╡ 0e8168af-baad-444f-9f5e-e0c8559fc81b
+function mandel(z)
+	c = z
+	maxiter = 80
+	for n = 1:maxiter
+	  if abs(z) > 2
+		  return n-1
+	  end
+	  z = z^2 + c
+	end
+	return maxiter
+end
+
+# ╔═╡ 5cc72a26-0469-40cd-95c0-8b44a747197b
+mandel(complex(.3, -.6))
+
+# ╔═╡ 920c775c-be47-4302-8481-87cd3b873807
+md"""
+
+Real component: $(@bind x_real PlutoUI.Slider(-2:0.01:1)) 
+
+Imaginary component: $(@bind x_img PlutoUI.Slider(-1:0.01:1))
+"""
+
+# ╔═╡ a83228cc-6281-4a08-9784-c40f35ebac3e
+md"""
+
+Resolution: $(@bind resolution PlutoUI.Slider([0.1, 0.01, 0.001], show_value=true))
+
+Real shift: $(@bind real_shift PlutoUI.Slider(-3:resolution:3, show_value=true, default=0))
+
+Img shift: $(@bind img_shift PlutoUI.Slider(-3:resolution:3, show_value=true, default=0))
+
+Zoom: $(@bind zoom PlutoUI.Slider(1:100, show_value=true, default=1))
+"""
+
+# ╔═╡ 8cc83acf-dddf-43c0-b9dc-5e39e541583e
+# evaluate the mandelbrot set over a complex plane
+begin
+	reals = ((-2:resolution:1) .+ real_shift) ./ zoom
+	imgs = ((-1:resolution:1) .+ img_shift) ./ zoom
+
+	plane = [complex(re, img) for (re, img) in Iterators.product(reals, imgs)]
+end;
+
+# ╔═╡ 3893e73e-d335-4c8b-96e2-6a8496623a53
+heatmap(mandel.(plane))
+
 # ╔═╡ 22fb5605-04fd-4f0a-b41a-6c9d65cd9425
 md"""
 ### Rosenbrock function 🗻
@@ -120,7 +189,7 @@ Wouldn't it be nice to automatically compute the exact derivative of mathematica
 Automatic differentiation (autodiff in short) is a set of techniques to automatically compute the derivative of a function in a computer program.
 
 [Enzyme](https://enzyme.mit.edu/) is a source code transformation autodiff engine operating at the LLVM level: it analysis the LLVM IR of the source code and takes the derivative of all the instructions, based on the built-in differentiation rules.
-The fact that it works at the LLVM level means that it's _mostly_ front-end-language-agnostic and can be used to take derivative of source code combining multiple languages or using parallelisation frameworks (["Scalable automatic differentiation of multiple parallel paradigms through compiler augmentation"](https://dl.acm.org/doi/abs/10.5555/3571885.3571964) won Best Student Paper award at SuperComputing 2022).
+The fact that it works at the LLVM level means that it's _mostly_ front-end-language-agnostic and can be used to take derivative of source code combining multiple languages or using parallelisation frameworks (["Scalable automatic differentiation of multiple parallel paradigms through compiler augmentation"](https://dl.acm.org/doi/abs/10.5555/3571885.3571964).
 """
 
 # ╔═╡ 7553f962-90fc-4ec2-892f-f73b300e0850
@@ -190,18 +259,133 @@ let
 	sol
 end
 
+# ╔═╡ 0b26e518-9fd5-46db-9a80-78c0a3fe0f62
+md"""
+## On Performance
+"""
+
+# ╔═╡ 37ba14ea-caf3-4d7f-81a3-a46e13c5042c
+function sum(X::Vector{Float64})
+    acc = 0::Int64
+    for x in X
+        (acc += x)::Float64
+    end
+    acc::Union{Int64, Float64}
+end
+    
+
+# ╔═╡ b4e65db8-3256-440a-9723-b5360f054a7d
+md"""
+## Figuring out what is happening
+The stages of the compiler
+
+- `@code_lowered`
+- `@code_typed` & `@code_warntype`
+- `@code_llvm`
+- `@code_native`
+
+Where is a function defined `@which` & `@edit`
+"""
+
+# ╔═╡ 175a1bb0-926c-4aac-9da1-0c09ec1cce53
+
+@bind N Slider(1:9)
+
+# ╔═╡ 61dbaace-d43a-4469-97f1-2760d9b5e059
+data = rand(10^N);
+
+# ╔═╡ 49c85664-208b-4c46-8407-44a5119888c7
+@code_lowered sum(data)
+
+# ╔═╡ 7a2b56c5-cf55-411f-bf38-409c3a507be5
+md"""
+## A simple example: counting
+"""
+
+# ╔═╡ 1dcfd086-7922-47be-b993-d22368decd68
+function f(N)
+    acc = 0
+    for i in 1:N
+        acc += 1
+    end
+    return acc
+end
+
+# ╔═╡ ba85941f-86dd-4c8f-b509-2fe79e4f4c2f
+K = 100_000_000
+
+# ╔═╡ 8e208f2d-69dd-4336-9a19-0914dd0182ee
+result = @benchmark f($K)
+
+# ╔═╡ 80135e68-6da5-4f97-a678-8d0589d25a9d
+begin
+	t = time(minimum(result)) * u"ns" # in ns
+	pFreq = round(typeof(1u"PHz"), K/t)
+end;
+
+# ╔═╡ 135013ce-ee5a-46bd-8659-79e1fedcd702
+@benchmark f($(Ref(10*K))[])
+
+# ╔═╡ cc9732f4-fee6-4c31-be16-c4c74ef046bb
+md"""
+Let's explore what code we are **actually** running.
+
+Using Julia's reflection macros we can see all of the stages of code-generation.
+"""
+
+# ╔═╡ e11d83d9-5f78-4f56-b78e-5a5fff8606d1
+@code_lowered f(K)
+
+# ╔═╡ 992a2eb2-ef18-49f1-993f-69c987859e5f
+@code_typed optimize=false f(K)
+
+# ╔═╡ e768df55-b2ea-4bbd-988b-08c403403882
+@code_typed optimize=true f(K)
+
+# ╔═╡ ac177383-f9a0-42ad-89bf-2bd1ec64145f
+with_terminal() do
+	@code_llvm optimize=false f(K)
+end
+
+# ╔═╡ 32c79d3b-1745-4f88-b479-f4b74f6a8249
+with_terminal() do
+	@code_llvm optimize=true f(K)
+end
+
+# ╔═╡ f3840a59-c0d3-47ff-ba77-371c7a9299ad
+with_terminal() do
+	@code_native f(K)
+end
+
+# ╔═╡ 2b0cf1c9-d00c-4fdf-b649-549a7e92d208
+md"""
+### Conclusion
+LLVM realised that our loop:
+```julia
+for i in 1:N
+  acc += 1
+end
+```
+
+Just ended up being $acc = 1 * N$
+"""
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
 
 [compat]
+BenchmarkTools = "~1.5.0"
 Enzyme = "~0.12.0"
 Optim = "~1.9.4"
 PlutoUI = "~0.7.58"
+Unitful = "~1.20.0"
 WGLMakie = "~0.9.9"
 """
 
@@ -211,7 +395,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.3"
 manifest_format = "2.0"
-project_hash = "eea180b1ba9e6e0c79e12ec122c7d9676a1013e0"
+project_hash = "5c01626402ed25704f0e6c87edfd6e7e5dcab9fa"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -312,6 +496,12 @@ version = "0.4.7"
 
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+
+[[deps.BenchmarkTools]]
+deps = ["JSON", "Logging", "Printf", "Profile", "Statistics", "UUIDs"]
+git-tree-sha1 = "f1dff6729bc61f4d49e140da1af55dcd1ac97b2f"
+uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+version = "1.5.0"
 
 [[deps.BitFlags]]
 git-tree-sha1 = "2dc09997850d68179b69dafb58ae806167a32b1b"
@@ -862,12 +1052,10 @@ deps = ["Adapt", "AxisAlgorithms", "ChainRulesCore", "LinearAlgebra", "OffsetArr
 git-tree-sha1 = "88a101217d7cb38a7b481ccd50d21876e1d1b0e0"
 uuid = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 version = "0.15.1"
+weakdeps = ["Unitful"]
 
     [deps.Interpolations.extensions]
     InterpolationsUnitfulExt = "Unitful"
-
-    [deps.Interpolations.weakdeps]
-    Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [[deps.IntervalArithmetic]]
 deps = ["CRlibm_jll", "MacroTools", "RoundingEmulator"]
@@ -1379,6 +1567,10 @@ version = "1.4.3"
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
+[[deps.Profile]]
+deps = ["Printf"]
+uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
+
 [[deps.ProgressMeter]]
 deps = ["Distributed", "Printf"]
 git-tree-sha1 = "763a8ceb07833dd51bb9e3bbca372de32c0605ad"
@@ -1731,6 +1923,20 @@ git-tree-sha1 = "53915e50200959667e78a92a418594b428dffddf"
 uuid = "1cfade01-22cf-5700-b092-accc4b62d6e1"
 version = "0.4.1"
 
+[[deps.Unitful]]
+deps = ["Dates", "LinearAlgebra", "Random"]
+git-tree-sha1 = "dd260903fdabea27d9b6021689b3cd5401a57748"
+uuid = "1986cc42-f94f-5a68-af5c-568840ba703d"
+version = "1.20.0"
+
+    [deps.Unitful.extensions]
+    ConstructionBaseUnitfulExt = "ConstructionBase"
+    InverseFunctionsUnitfulExt = "InverseFunctions"
+
+    [deps.Unitful.weakdeps]
+    ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
+    InverseFunctions = "3587e190-3f89-42d0-90ee-14403ec27112"
+
 [[deps.WGLMakie]]
 deps = ["Bonito", "Colors", "FileIO", "FreeTypeAbstraction", "GeometryBasics", "Hyperscript", "LinearAlgebra", "Makie", "Observables", "PNGFiles", "PrecompileTools", "RelocatableFolders", "ShaderAbstractions", "StaticArrays"]
 git-tree-sha1 = "6fe1e8377f67358503a7e8841e4a7530cdb93cad"
@@ -1896,6 +2102,13 @@ version = "3.5.0+0"
 # ╟─9b770ce2-2285-42e5-9f5e-dcdbcf387768
 # ╟─3902e31a-b2bf-4c7c-b44b-d5a5340ca574
 # ╠═f6dcabfb-9f97-4be7-a729-eacd9402d4bf
+# ╟─73f61e66-5217-4fac-9607-cf2dc3889a39
+# ╠═0e8168af-baad-444f-9f5e-e0c8559fc81b
+# ╠═5cc72a26-0469-40cd-95c0-8b44a747197b
+# ╟─920c775c-be47-4302-8481-87cd3b873807
+# ╟─a83228cc-6281-4a08-9784-c40f35ebac3e
+# ╟─8cc83acf-dddf-43c0-b9dc-5e39e541583e
+# ╠═3893e73e-d335-4c8b-96e2-6a8496623a53
 # ╟─22fb5605-04fd-4f0a-b41a-6c9d65cd9425
 # ╟─9536e1ca-7d5f-47bb-8ecc-55f38e7df1a2
 # ╠═92b71ff8-0dc5-481c-9d05-19d3db73cbcc
@@ -1916,5 +2129,26 @@ version = "3.5.0+0"
 # ╠═07df2151-525e-4fdd-a66a-db211bf02932
 # ╠═950b361d-c603-49bd-8e0f-ab49971db1a0
 # ╠═ecc9581f-4efc-408c-832a-ac33b2392d55
+# ╠═0b26e518-9fd5-46db-9a80-78c0a3fe0f62
+# ╠═37ba14ea-caf3-4d7f-81a3-a46e13c5042c
+# ╠═b4e65db8-3256-440a-9723-b5360f054a7d
+# ╠═175a1bb0-926c-4aac-9da1-0c09ec1cce53
+# ╠═61dbaace-d43a-4469-97f1-2760d9b5e059
+# ╠═49c85664-208b-4c46-8407-44a5119888c7
+# ╟─7a2b56c5-cf55-411f-bf38-409c3a507be5
+# ╠═1dcfd086-7922-47be-b993-d22368decd68
+# ╠═1195dec8-2d9b-4bae-a2b6-c0835ad6e27b
+# ╠═ba85941f-86dd-4c8f-b509-2fe79e4f4c2f
+# ╠═8e208f2d-69dd-4336-9a19-0914dd0182ee
+# ╠═80135e68-6da5-4f97-a678-8d0589d25a9d
+# ╠═135013ce-ee5a-46bd-8659-79e1fedcd702
+# ╠═cc9732f4-fee6-4c31-be16-c4c74ef046bb
+# ╠═e11d83d9-5f78-4f56-b78e-5a5fff8606d1
+# ╠═992a2eb2-ef18-49f1-993f-69c987859e5f
+# ╠═e768df55-b2ea-4bbd-988b-08c403403882
+# ╠═ac177383-f9a0-42ad-89bf-2bd1ec64145f
+# ╠═32c79d3b-1745-4f88-b479-f4b74f6a8249
+# ╠═f3840a59-c0d3-47ff-ba77-371c7a9299ad
+# ╟─2b0cf1c9-d00c-4fdf-b649-549a7e92d208
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
