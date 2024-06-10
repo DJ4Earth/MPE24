@@ -1,6 +1,6 @@
-# SIAM Conference on Mathematics of Planet Earth (MPE24): Material for minitutorials
+# SIAM Conference on Mathematics of Planet Earth (MPE24): Material for Minitutorials
 
-To find the rendewred notebooks: https://dj4earth.github.io/MPE24/
+To find prerendered notebooks go to https://dj4earth.github.io/MPE24/.
 
 ## Requirements
 For the tutorials we will use [Pluto.jl](https://plutojl.org/) notebooks in [Julia](https://julialang.org/).
@@ -31,18 +31,18 @@ Start Pluto.jl
 import Pluto
 Pluto.run()
 ```
-Load the notebooks from this repository. Alternatively, you can view the static html version of the notebooks linked below.
+Load the notebooks from this repository. Alternatively, you can view a prerendered static html version of the notebooks (see above).
 
 ## MT1: Differentiable Programming in Julia with Enzyme
 Tuesday, June 11, 10:00 AM - 12:00 PM, Grand II - Ballroom Level
 
   - Valentin Churavy, Massachusetts Institute of Technology, U.S.
   - William Moses, University of Illinois Urbana-Champaign, U.S.
-  - Michel Schanen, Argonne National Laboratory, U.S., "Differentiation of 2D Burgers using Enzyme", [source](Burgers_tutorial/burgers_tutorial.jl) [html](https://dj4earth.github.io/MPE24/Burgers_tutorial/burgers_tutorial.html)
+  - Michel Schanen, Argonne National Laboratory, U.S. 
 
 We will demonstrate the differentiable programming paradigm in Julia. We will introduce the Julia programming language allowing users to write their first programs. This will be followed by an introduction to automatic differentiation (AD) concepts and a demonstration of the AD tool Enzyme. It is highly-efficient and its ability to perform AD on optimized code allows Enzyme to meet or exceed the performance of state-of-the-art AD tools. We will provide notebooks for attendees to write Julia code and differentiate codes with Enzyme.
 
-This session is co-authored by Sri HariKrishna Narayanan and Jan Hückelheim, Argonne National Laboratory, U.S.
+This session is co-authored by Sri Hari Krishna Narayanan and Jan Hückelheim, Argonne National Laboratory, U.S.
 
 ## MT2: Differentiable Earth System Models in Julia
 Tuesday, June 11, 2:45 PM - 4:45 PM, Grand II - Ballroom Level
