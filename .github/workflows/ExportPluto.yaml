@@ -10,7 +10,7 @@ on:
 # When two jobs run in parallel, cancel the older ones, to make sure that the website is generated from the most recent commit.
 concurrency:
     group: pluto-export
-    cancel-in-progress: true
+    cancel-in-progress: false
 
 # This action needs permission to write the exported HTML file to the gh-pages branch.
 permissions:
