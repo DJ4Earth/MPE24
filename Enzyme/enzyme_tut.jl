@@ -18,6 +18,7 @@ using PlutoUI
 # ╔═╡ 80253028-a942-485f-88fe-dfb9204d140a
 begin
 	using Plots
+	using PlotlyBase, PlotlyKaleido
 	plotly()
 end
 
@@ -187,14 +188,13 @@ What we're doing with our approximation is essentially computing (A + df) - A. A
 For example, lets suppose we only have 9 digits of precision.
 
 ```
-A =    100,000,000.0
+A       =  100,000,000.0
 
-b =              3.141592653
+b       =            3.141592653
 
-A+B =  100,000,003.0
+A+B     =  100,000,003.0
 
-(A+B)-A
-    =            3.000000000
+(A+B)-A =            3.000000000
 ```
 
 Let's look at this in practice here
@@ -272,7 +272,9 @@ In Julia, we can look at the generated LLVM instructions of this function, as fo
 """
 
 # ╔═╡ 2702024c-83f3-489a-8e04-a0661e0d5ae6
-@code_llvm simple_mlp(3.0, 2.0, 4.0)
+with_terminal() do
+	@code_llvm simple_mlp(3.0, 2.0, 4.0)
+end
 
 # ╔═╡ 4a81382f-8b8d-4875-a06d-0011b221fde4
 md"""
@@ -303,7 +305,8 @@ f(x+\epsilon) = f(x) + f'(x) \epsilon + f''(x) \epsilon^2 + ...
 ```
 
 At small epsilon, we find the derivative on the epsilon term
-```
+
+```math
 f(x+\epsilon) = f(x) + f'(x) \epsilon, \epsilon << 1
 ```
 
@@ -338,7 +341,7 @@ Enzyme implements these rules or all the primitive LLVM instructions. By impleme
 """
 
 # ╔═╡ 738fa258-8fe8-472a-b36d-e78b095b5a77
-begin
+with_terminal() do 
 Enzyme.API.printall!(true)
 Enzyme.autodiff(Forward,
 				simple_mlp,
@@ -384,7 +387,7 @@ Let's try it out on our dual number example.
 """
 
 # ╔═╡ ac7906bd-862b-4d8b-a2c9-d721485c3007
-begin
+with_terminal() do
 Enzyme.API.printall!(true)
 Enzyme.autodiff(Forward,
 				simple_mlp,
@@ -448,7 +451,7 @@ Something else we can do to improve performance. We're still computing the resul
 """
 
 # ╔═╡ 2465b9ad-b730-443b-97dc-0482f25d1f62
-begin
+with_terminal() do 
 Enzyme.API.printall!(true)
 Enzyme.autodiff(Forward,
 				simple_mlp,
@@ -597,11 +600,11 @@ md"""
 We see that the derivative `dout[1]/din[1]` is successfully stored in `din[1]`.
 If we instead wanted to compute `a * dout[1]/din[1]`, we instead could have initialized `dout[1] = a` before running autodiff
 
-However, we can also see that Enzyme 0'd out dout, since it propagated it back.
+However, we can also see that Enzyme 0'd out `dout`, since it propagated it back.
 
 This behavior is critical to enabling Enzyme to differentiate through code which mutates in place.
 
-Let's instead write a version of our function which overwrites the array with sin of the input. Now we will set dinp[1] to be 1.0, the value we want to propagate backwards, and at the end we want to find dinp[1] to contain the derivative of the output value with respect to its input value.
+Let's instead write a version of our function which overwrites the array with sin of the input. Now we will set `dinp[1]` to be 1.0, the value we want to propagate backwards, and at the end we want to find `dinp[1]` to contain the derivative of the output value with respect to its input value.
 """
 
 # ╔═╡ 5672a042-d1f4-4f0d-b435-19b75b871af4
@@ -627,7 +630,7 @@ However, if you have multiple return variables, it gets a tad more compilated.
 
 Like forward mode we can generalize the equation of what reverse mode computes. 
 
-Suppose our function f(x, y, z) returns 3 variables f1, f2, and f3.
+Suppose our function `f(x, y, z)` returns 3 variables `f1`, `f2`, and `f3`.
 
 Supposing that we had intiialized shadow returns `df1`, `df2`, and `df3`, reverse mode will compute:
 
@@ -760,7 +763,7 @@ Here we compute the relative speedup of Enzyme, as well as a reference pipeline 
 
 In particular, while the Enzyme tool is used for both "Enzyme" and "Reference" the "Enzyme" pipeline runs LLVM optimizations prior to AD.
 
-This chart is from
+This chart is from:
 ```
 Instead of Rewriting Foreign Code for Machine Learning, Automatically Synthesize Fast Gradients; Moses, William and Churavy, Valentin. NeurIPS ’20.
 ```
@@ -789,6 +792,12 @@ $(LocalResource("./gpu.png"))
 ### Multicore Benchmarks
 This also applies to multicore/multi node paralleism as well. The blue lines in this plot denotes the performance of an application as it is scaled with multiple threads (up to 64). The green lines denote the performance of the gradient. On the left plot, standard optimizations (but no novel parallel optimizations) are applied. We see that the performance steadies out after around ~10 threads. On the right hand side, we now apply parallel optimizations prior to AD. We see that the performance continues to scale similarly to that of the original computation, subject to a hiccup at 32-threads (the machine has two distinct CPU sockets, each which 32 threads, so after 32 threads one needs to coordinate across sockets).
 
+This chart is from
+```
+Scalable automatic differentiation of multiple parallel paradigms through compiler augmentation;
+William S Moses, Sri Hari Krishna Narayanan, Ludger Paehler, Valentin Churavy, Michel Schanen, Jan Hückelheim, Johannes Doerfert, Paul Hovland. SC '22.
+```
+
 $(LocalResource("./par.png"))
 
 ### Lux Benchmarks
@@ -813,12 +822,16 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
+PlotlyBase = "a03496cd-edff-5a9b-9e67-9cda94a718b5"
+PlotlyKaleido = "f2990250-8cf9-495f-b13a-cce12b45703c"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 
 [compat]
 BenchmarkTools = "~1.5.0"
-Enzyme = "~0.11.20"
+Enzyme = "~0.12.12"
+PlotlyBase = "~0.8.19"
+PlotlyKaleido = "~2.2.4"
 Plots = "~1.40.4"
 PlutoUI = "~0.7.59"
 """
@@ -827,9 +840,9 @@ PlutoUI = "~0.7.59"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.0"
+julia_version = "1.10.3"
 manifest_format = "2.0"
-project_hash = "bafa69310383a87ff97052ccd2e00eef972ec966"
+project_hash = "cf58beda53cb50324259b56457e2b686b1e88141"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -924,7 +937,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+1"
+version = "1.1.1+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -971,20 +984,24 @@ version = "1.6.0"
 
 [[deps.Enzyme]]
 deps = ["CEnum", "EnzymeCore", "Enzyme_jll", "GPUCompiler", "LLVM", "Libdl", "LinearAlgebra", "ObjectFile", "Preferences", "Printf", "Random"]
-git-tree-sha1 = "3fb48f9c18de1993c477457265b85130756746ae"
+git-tree-sha1 = "75ea6a9c7be32536a3db7eb554de64e49fd14456"
 uuid = "7da242da-08ed-463a-9acd-ee780be4f1d9"
-version = "0.11.20"
+version = "0.12.12"
 
     [deps.Enzyme.extensions]
+    EnzymeChainRulesCoreExt = "ChainRulesCore"
     EnzymeSpecialFunctionsExt = "SpecialFunctions"
+    EnzymeStaticArraysExt = "StaticArrays"
 
     [deps.Enzyme.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
     SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+    StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [[deps.EnzymeCore]]
-git-tree-sha1 = "1bc328eec34ffd80357f84a84bb30e4374e9bd60"
+git-tree-sha1 = "a2f4588bde1588af6279729540099895f8dee843"
 uuid = "f151be2c-9106-41f4-ab19-57ee4f262869"
-version = "0.6.6"
+version = "0.7.4"
 
     [deps.EnzymeCore.extensions]
     AdaptExt = "Adapt"
@@ -994,9 +1011,9 @@ version = "0.6.6"
 
 [[deps.Enzyme_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "32d418c804279c60dd38ac7868126696f3205a4f"
+git-tree-sha1 = "e3ece7b5fb991252abd138a2978e970063fc1412"
 uuid = "7cc45869-7501-5eee-bdea-0790c847d4ef"
-version = "0.0.102+0"
+version = "0.0.121+0"
 
 [[deps.EpollShim_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1073,9 +1090,9 @@ version = "3.3.9+0"
 
 [[deps.GPUCompiler]]
 deps = ["ExprTools", "InteractiveUtils", "LLVM", "Libdl", "Logging", "Scratch", "TimerOutputs", "UUIDs"]
-git-tree-sha1 = "a846f297ce9d09ccba02ead0cae70690e072a119"
+git-tree-sha1 = "518ebd058c9895de468a8c255797b0c53fdb44dd"
 uuid = "61eb1bfa-7361-4325-ad38-22787b887f55"
-version = "0.25.0"
+version = "0.26.5"
 
 [[deps.GR]]
 deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Preferences", "Printf", "Random", "Serialization", "Sockets", "TOML", "Tar", "Test", "p7zip_jll"]
@@ -1175,6 +1192,12 @@ git-tree-sha1 = "c84a835e1a09b289ffcd2271bf2a337bbdda6637"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
 version = "3.0.3+0"
 
+[[deps.Kaleido_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "43032da5832754f58d14a91ffbe86d5f176acda9"
+uuid = "f7e6163d-2fa5-5f23-b69c-1db539e41963"
+version = "0.2.1+0"
+
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "170b660facf5df5de098d866564877e119141cbd"
@@ -1189,9 +1212,9 @@ version = "3.0.0+1"
 
 [[deps.LLVM]]
 deps = ["CEnum", "LLVMExtra_jll", "Libdl", "Preferences", "Printf", "Requires", "Unicode"]
-git-tree-sha1 = "839c82932db86740ae729779e610f07a1640be9a"
+git-tree-sha1 = "389aea28d882a40b5e1747069af71bdbd47a1cae"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "6.6.3"
+version = "7.2.1"
 
     [deps.LLVM.extensions]
     BFloat16sExt = "BFloat16s"
@@ -1413,7 +1436,7 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.23+2"
+version = "0.3.23+4"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1448,6 +1471,12 @@ deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
 version = "10.42.0+1"
 
+[[deps.Parameters]]
+deps = ["OrderedCollections", "UnPack"]
+git-tree-sha1 = "34c0e9ad262e5f7fc75b10a9952ca7692cfc5fbe"
+uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+version = "0.12.3"
+
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
 git-tree-sha1 = "8489905bcdbcfac64d1daa51ca07c0d8f0283821"
@@ -1481,6 +1510,18 @@ deps = ["ColorSchemes", "Colors", "Dates", "PrecompileTools", "Printf", "Random"
 git-tree-sha1 = "7b1a9df27f072ac4c9c7cbe5efb198489258d1f5"
 uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
 version = "1.4.1"
+
+[[deps.PlotlyBase]]
+deps = ["ColorSchemes", "Dates", "DelimitedFiles", "DocStringExtensions", "JSON", "LaTeXStrings", "Logging", "Parameters", "Pkg", "REPL", "Requires", "Statistics", "UUIDs"]
+git-tree-sha1 = "56baf69781fc5e61607c3e46227ab17f7040ffa2"
+uuid = "a03496cd-edff-5a9b-9e67-9cda94a718b5"
+version = "0.8.19"
+
+[[deps.PlotlyKaleido]]
+deps = ["Base64", "JSON", "Kaleido_jll"]
+git-tree-sha1 = "2650cd8fb83f73394996d507b3411a7316f6f184"
+uuid = "f2990250-8cf9-495f-b13a-cce12b45703c"
+version = "2.2.4"
 
 [[deps.Plots]]
 deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "PrecompileTools", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "UnitfulLatexify", "Unzip"]
@@ -1685,6 +1726,11 @@ version = "1.5.1"
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+
+[[deps.UnPack]]
+git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
+uuid = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+version = "1.0.2"
 
 [[deps.Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
@@ -2012,97 +2058,97 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═178107ab-3c97-4182-97df-d71c95430576
+# ╟─178107ab-3c97-4182-97df-d71c95430576
 # ╟─255f9712-039d-476c-8a03-111f7f734121
 # ╟─863f1bd1-a570-4367-833e-c18a18cddd16
 # ╠═c741bfa6-cc8e-462a-b5dd-931306cff939
 # ╟─97d017ec-47bd-4071-9890-3a3dca26417c
 # ╠═3a8e2018-7427-4c61-ae5e-4e2384019000
-# ╠═651ab7be-2f87-4112-8304-ac8ecfbda5ff
+# ╟─651ab7be-2f87-4112-8304-ac8ecfbda5ff
 # ╠═19f2b988-2780-11ef-09c9-675188aabe39
-# ╠═13abf071-166d-4d5d-8f8d-bb8da95def01
-# ╟─80253028-a942-485f-88fe-dfb9204d140a
+# ╟─13abf071-166d-4d5d-8f8d-bb8da95def01
+# ╠═80253028-a942-485f-88fe-dfb9204d140a
 # ╠═78b36b4d-b3b8-4ed3-ad23-d8fa619ba95a
 # ╠═15f5809c-248e-4c5b-ab93-66b527d457f5
 # ╠═b6c125ce-faa6-46f1-b47b-8bb0e8687546
 # ╠═b3934ed7-c0fa-4be4-bc3b-9c14f7112979
-# ╠═d3b165ff-5e5c-4f12-bb3f-0191bc22231f
+# ╟─d3b165ff-5e5c-4f12-bb3f-0191bc22231f
 # ╠═63d9f6bc-4b65-4717-8d37-85e6f96dc4a3
 # ╠═b17ed9ff-3e48-447e-8d21-81ffcf4d38ee
 # ╠═7011b799-a133-4bae-ab32-46c06205d7a6
 # ╠═a2278ac5-5ae2-4019-8fa2-4b8ff0a0da72
 # ╠═59d52ba9-4898-4332-96fb-bfaa0317f1f3
-# ╠═2bf0c271-5d85-467d-8c5e-5cc5a6aff91b
+# ╟─2bf0c271-5d85-467d-8c5e-5cc5a6aff91b
 # ╠═11dac985-04ac-4743-8237-a13d2c061a09
 # ╠═26f199fe-e626-43e1-bcc8-a189d90976ab
-# ╠═e46225a7-f17f-459b-bdfd-a8a511532c80
+# ╟─e46225a7-f17f-459b-bdfd-a8a511532c80
 # ╠═49b43661-543e-4c7b-a58a-dcabd35a57ec
-# ╠═87d08aad-18cc-4bbd-b8ca-644e4a01e8d2
+# ╟─87d08aad-18cc-4bbd-b8ca-644e4a01e8d2
 # ╠═7336d600-4d66-4d65-a2cc-f4192ec10507
-# ╠═5e14790e-3ee9-4865-95df-9f0454a62c5b
+# ╟─5e14790e-3ee9-4865-95df-9f0454a62c5b
 # ╠═46dec2b5-60bf-411b-be88-2a7208d41f63
 # ╠═8b56b409-27a5-47cf-a3d3-05ffaef19672
 # ╟─f3b30d9d-a212-4cc7-a376-56137202322f
 # ╠═bb4ebb8d-0a78-4bce-809b-85da6935c5a3
 # ╠═3fbddec3-64c3-4738-a2cc-cbbd888c1496
 # ╠═da9ef06e-fbdb-4c42-be1c-f574d13d05e2
-# ╠═9f8f6ac4-493f-4fdc-989a-30234a5925e7
+# ╟─9f8f6ac4-493f-4fdc-989a-30234a5925e7
 # ╠═aabc161b-c437-40d9-abbb-f3ce71381664
 # ╠═e8c2d6c4-74a8-4ef5-9616-1cd0b81771b4
-# ╠═a272a092-8a8a-4957-9aa2-f16adfe0477f
+# ╟─a272a092-8a8a-4957-9aa2-f16adfe0477f
 # ╠═812170d7-021f-49fb-8f69-b5f0a99577c5
-# ╠═92350e22-aafa-41b1-8574-086890977e4e
+# ╟─92350e22-aafa-41b1-8574-086890977e4e
 # ╠═7c317097-a50e-4f1b-8bf5-0b1428ba2050
-# ╠═89f0b4b9-b3a4-4ec7-9127-2da56c66a1fe
+# ╟─89f0b4b9-b3a4-4ec7-9127-2da56c66a1fe
 # ╠═2702024c-83f3-489a-8e04-a0661e0d5ae6
-# ╠═4a81382f-8b8d-4875-a06d-0011b221fde4
-# ╠═c56bd72a-e560-4c59-8ce3-38bc5e911a04
+# ╟─4a81382f-8b8d-4875-a06d-0011b221fde4
+# ╟─c56bd72a-e560-4c59-8ce3-38bc5e911a04
 # ╠═738fa258-8fe8-472a-b36d-e78b095b5a77
-# ╠═61069582-f578-4882-abd7-ac5cc01922cf
-# ╠═50e58400-08ed-49ad-acda-0e2246ac1887
+# ╟─61069582-f578-4882-abd7-ac5cc01922cf
+# ╟─50e58400-08ed-49ad-acda-0e2246ac1887
 # ╠═ac7906bd-862b-4d8b-a2c9-d721485c3007
-# ╠═21c60c2d-7132-4cf0-879e-b6134ddd378b
+# ╟─21c60c2d-7132-4cf0-879e-b6134ddd378b
 # ╠═f54c13a9-d7df-4a7a-b7bb-d3f8051f81d7
 # ╠═ddeae86a-1a87-49f7-89a9-6b85d0eb5089
-# ╠═0ba59223-a587-4a02-817f-03f64224f932
+# ╟─0ba59223-a587-4a02-817f-03f64224f932
 # ╠═9d6dab5d-aee5-4ff3-bd7a-0bdd20f457f5
 # ╠═a4c6013d-2ea0-44e4-9f5c-2f04530caf10
 # ╠═dd51a07c-40c0-4099-a4bc-705b70608afe
-# ╠═fda26922-d07d-4a01-ba26-c6ed9f44097e
+# ╟─fda26922-d07d-4a01-ba26-c6ed9f44097e
 # ╠═2465b9ad-b730-443b-97dc-0482f25d1f62
 # ╠═b7d61b24-e810-4e90-9b9f-6ced5761119e
 # ╟─3cf2f7e4-be8e-4fdd-ba37-c88a6fdfa4b0
 # ╠═41549067-cff3-487a-a378-9bfc93331d12
 # ╠═123a8c86-f00c-4e17-948f-228c6c9671c0
-# ╠═e3974bd1-0323-44eb-ac29-f36058a1796e
+# ╟─e3974bd1-0323-44eb-ac29-f36058a1796e
 # ╠═d215eb4d-d14a-46da-a5a6-a0ce4eff8b06
 # ╟─4936b250-a7ef-4d50-9ef1-7ccc3e207e91
 # ╠═f9701aad-233d-4ee5-8ca1-75a64ef671ec
-# ╠═2552b0b2-8cf1-4157-8c08-513280ec5b34
+# ╟─2552b0b2-8cf1-4157-8c08-513280ec5b34
 # ╠═db567339-43aa-48f9-b98f-9b2b5a88a343
-# ╠═13ecd35a-5c34-4c49-bb10-bdb886640367
+# ╟─13ecd35a-5c34-4c49-bb10-bdb886640367
 # ╠═1714d2cf-9103-4760-8c9c-f5dfad6eaf8e
-# ╠═03daf5a3-5be6-4e02-b7f6-a25a29f5ea6a
+# ╟─03daf5a3-5be6-4e02-b7f6-a25a29f5ea6a
 # ╠═474e933d-be0a-4316-b2e8-d108712cb946
-# ╠═1537bb57-162f-485b-beb0-93919bd8d457
+# ╟─1537bb57-162f-485b-beb0-93919bd8d457
 # ╠═407ab743-893a-4c1c-9db4-4b0c59f11239
-# ╠═1e4bba58-0c12-425c-9050-ba77343793eb
+# ╟─1e4bba58-0c12-425c-9050-ba77343793eb
 # ╠═5672a042-d1f4-4f0d-b435-19b75b871af4
 # ╠═def31b91-7492-457e-9505-9927f69931c3
-# ╠═b4819762-7c61-466d-8046-9c968a9d4150
+# ╟─b4819762-7c61-466d-8046-9c968a9d4150
 # ╟─d0bade47-a4d1-42a9-a29a-697e21d840b4
 # ╠═11307daa-2d60-4034-90c4-2403ca3c0767
 # ╠═c4ef2a04-ea76-4848-8730-6852e92d9060
 # ╟─23ab51c1-3c09-4691-a244-73eb10c3849b
 # ╠═6cebb4ba-32bf-4560-b387-e7d059a7b6a4
-# ╠═2f0d407f-a21b-4157-bf34-87bdd072c6a2
+# ╟─2f0d407f-a21b-4157-bf34-87bdd072c6a2
 # ╠═2cf7f980-76bc-479e-bce7-d6d27b1e9362
 # ╠═51988b17-84c7-41c3-8258-e252c71ff6cd
 # ╠═03aea9c6-2c2f-4291-b3a3-bb7f87340fc2
 # ╠═9b056582-6d06-4d6c-a135-4d9674fd210e
 # ╠═8ce4aa9a-1e30-4a7f-978e-e724a4ce627d
 # ╠═be97d708-46e3-4088-bf45-66cda11b4f2e
-# ╠═46725be5-a292-4697-a842-74ce086e381e
+# ╟─46725be5-a292-4697-a842-74ce086e381e
 # ╟─e3159c46-cb4d-4271-a6bb-66ba94aaf6bb
 # ╠═a2ec52c6-296e-4056-bb37-0f2d7aa6cc56
 # ╟─00000000-0000-0000-0000-000000000001
