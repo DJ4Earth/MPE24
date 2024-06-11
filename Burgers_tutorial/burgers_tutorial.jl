@@ -188,6 +188,7 @@ To discretize the system, we use a centered finite difference scheme in space an
 
 ## Stencil
 We implement a kernel that computes $u_{t+1}, v_{t+1}$ with respect to $u_t$, $v_t$ at grid point $(i,j)$. This allows us to parallelize the kernel over the grid points.
+The arguments to the kernel are the necessary fields in the struct `Burger`. A kernel is only allowed to have arguments that are of type `isbits`.
 """
 
 # ╔═╡ d7df76fd-dbb3-43bd-a1a9-35b69cebcbcb
@@ -231,6 +232,13 @@ Here we use the domain $[-3,3] \times [-3,3]$. Again, we implement this as a ker
 """
 
 
+# ╔═╡ ecc59af4-f6a5-4309-8255-133343e3e296
+md"""$(LocalResource("grid.png", :width => 200, :style => "text-align: center"))"""
+
+# ╔═╡ 78eb10bd-8ea0-4746-b832-231d8fe8bce9
+md"""First we implement $(html"<span style='color: green;'>the initial conditions for the inner points</span>") set to a centered Gaussian
+"""
+
 # ╔═╡ 0dc72edd-d11c-4f71-baee-a5c265b2d135
 @kernel function set_ic_kernel!(lastu, nextu, lastv, nextv, nx, ny)
     i, j = @index(Global, NTuple)
@@ -242,7 +250,7 @@ end
 
 # ╔═╡ 75f0cbda-57f4-4232-93f8-a88ccd764d16
 md"""
-We use Dirichlet conditions on all four boundaries
+ followed by the $(html"<span style='color: red;'>Dirichlet boundary conditions for the points on the four boundaries sides</span>").
 ```math
 u(t,x,-L) = u(t,x, L) = u(t,-L, y) = u(t,L, y) = 0, \\
 v(t,x,-L) = v(t,x, L) = v(t,-L, y) = v(t,L, y) = 0, .
@@ -408,9 +416,6 @@ md"""
 and the final energy is
 """
 
-# ╔═╡ 01549692-94ba-4119-b259-052be74fc4b0
-fenergy = final_energy!(burgers)
-
 # ╔═╡ c001200e-392e-4bd5-bf89-2b3b81e1a31f
 md"""
 # Plotting of Primal
@@ -485,6 +490,14 @@ begin
 	autodiff(ReverseWithPrimal, final_energy!, Active, Duplicated(burgers, dburgers))
 end
 
+# ╔═╡ c81d0aff-fdaa-40c2-b78b-a89143bf401d
+md""" We define the _adjoint velocity magnitude_ as $(dJ/du)^2 + (dJ/dv)^2$. Not that in the implementation we have to access the `last` field (input) as opposed to the `next` field (output) when computing the velocity magnitude."""
+
+# ╔═╡ f061c0c1-5955-4e1b-888c-922dbae316b8
+function adjoint_velocity_magnitude(burgers)
+	burgers.lastu[2:end-1, 2:end-1] .^ 2 + burgers.lastv[2:end-1, 2:end-1] .^ 2
+end
+
 # ╔═╡ 33c47fe9-6326-47df-8539-3999297298a9
 begin
 surface(
@@ -493,7 +506,6 @@ surface(
     dburgers.lastu[2:end-1, 2:end-1] .^ 2 + dburgers.lastv[2:end-1, 2:end-1] .^ 2;
 	axis=(type=Axis3,),
 )
-end
 
 # ╔═╡ 3a4e997d-b002-4129-a69a-90bfe285f824
 md"""
@@ -518,15 +530,49 @@ Load the [Checkpointing.jl](https://github.com/Argonne-National-Laboratory/Check
 
 # ╔═╡ fd8cd500-0442-4006-9e25-5e51e0e61770
 md"""
-The checkpointing scheme will be passed to the timestepping method as an additional argument. TODO
+The checkpointing scheme will be passed to the timestepping method as an additional argument.
 """
 
 # ╔═╡ 6dabc190-b86e-47e7-ae4b-c00a4f83fdd7
-function final_energy_chk!(burgers::Burgers, scheme)
+function final_energy!(burgers::Burgers, scheme)
     @checkpoint_struct scheme burgers for i = 1:burgers.tsteps
         advance!(burgers)
     end
     return energy(burgers)
+end
+
+# ╔═╡ 01549692-94ba-4119-b259-052be74fc4b0
+fenergy = final_energy!(burgers)
+
+# ╔═╡ a9814ad4-7c9b-4c25-8fa4-b1683ad9be82
+begin
+burgers_hd = Burgers(1000, 1000, μ, 1e-2, 1e-2, dt, 1000)
+set_ic!(burgers_hd)
+set_bc!(burgers_hd)
+final_energy!(burgers_hd)
+surface(
+	range(-3, 3, length=burgers_hd.nx-2),
+	range(-3, 3, length=burgers_hd.ny-2),
+	velocity_magnitude(burgers_hd);xlabel = "x", ylabel = "y", c = color,
+    legend=:none
+)
+end
+
+# ╔═╡ f152117a-578c-451f-86ce-4acd1a669bfd
+begin
+dburgers = Enzyme.make_zero(deepcopy(burgers))
+autodiff(ReverseWithPrimal, final_energy!, Active, Duplicated(burgers, dburgers))
+end
+
+# ╔═╡ 33c47fe9-6326-47df-8539-3999297298a9
+begin
+surface(
+    range(-3, 3, length=dburgers.nx-2),
+    range(-3, 3, length=dburgers.ny-2),
+    adjoint_velocity_magnitude(dburgers);
+	xlabel = "x", ylabel = "y", c = color,
+    legend=:none
+)
 end
 
 # ╔═╡ d17ba6af-0ccc-4de5-9de5-9cefd4afa87c
@@ -550,20 +596,22 @@ Start the differentiation using Enzyme. The checkpointing scheme is passed as a 
 # ╔═╡ 42a682f0-6fc4-44ae-9c3f-1434a69f5ff6
 begin
 	reset!(revolve)
-	autodiff(ReverseWithPrimal, final_energy_chk!, Active, Duplicated(burgers, dburgers), Const(revolve))
+	autodiff(ReverseWithPrimal, final_energy!, Active, Duplicated(burgers, dburgers), Const(revolve))
 end
 
 # ╔═╡ 3db86c1b-6a9a-4855-8385-a0c2a8f073b6
 md"""
-The adjoint fields are stored in `dburgers` and store $du/dJ$, $dv/dJ$. We then compute the "adjoint velocity magnitude" $(dJ/du)^2 + (dJ/dv)^2$.
+We then plot the adjoint velocity magnitude.
 """
 
 # ╔═╡ 5beb4b8b-2c08-440a-a275-12fba8bbd852
 surface(
     range(-3, 3, length=burgers.nx-2),
     range(-3, 3, length=burgers.ny-2),
-    dburgers.lastu[2:end-1, 2:end-1] .^ 2 + dburgers.lastv[2:end-1, 2:end-1] .^ 2;
+    adjoint_velocity_magnitude(dburgers);
 	axis=(type=Axis3,),
+	xlabel = "x", ylabel = "y", c = color,
+    legend=:none
 )
 
 # ╔═╡ caaef553-35cc-4984-9dcd-bc057bb93cf2
@@ -573,19 +621,21 @@ Let's do the high-resolution example
 
 # ╔═╡ b06b03fb-9be6-4077-8640-3a5dae4d7980
 begin
-	set_bc!(burgers_hd)
-	set_ic!(burgers_hd)
-	dburgers_hd = Enzyme.make_zero(deepcopy(burgers_hd))
-	revolve_hd = Revolve{Burgers}(1000, 10; verbose = 1)
-	autodiff(ReverseWithPrimal, final_energy_chk!, Active, Duplicated(burgers_hd, dburgers_hd), Const(revolve_hd))
+    set_bc!(burgers_hd)
+    set_ic!(burgers_hd)
+    dburgers_hd = Enzyme.make_zero(deepcopy(burgers_hd))
+    revolve_hd = Revolve{Burgers}(1000, 10; verbose = 1)
+    autodiff(ReverseWithPrimal, final_energy!, Active, Duplicated(burgers_hd, dburgers_hd), Const(revolve_hd))
 end
 
 # ╔═╡ 9c5f3dbe-598c-4160-875f-51de499aba05
 surface(
     range(-3, 3, length=burgers_hd.nx-2),
     range(-3, 3, length=burgers_hd.ny-2),
-	dburgers_hd.lastu[2:end-1, 2:end-1] .^ 2 + dburgers_hd.lastv[2:end-1, 2:end-1] .^ 2;
+	adjoint_velocity_magnitude(dburgers_hd);
 	axis=(type=Axis3,),
+    xlabel = "x", ylabel = "y", c = color,
+    legend=:none, camera = (120, 30)
 )
 
 # ╔═╡ 871a7d07-2417-4e73-a9b9-5d7916edb167
@@ -608,14 +658,11 @@ begin
 	set_ic!(cu_burgers)
 	set_bc!(cu_burgers)
 	final_energy!(cu_burgers)
-	# Transfer to host for plotting
-	nextu = adapt(CPU(), cu_burgers.nextu)
-	nextv = adapt(CPU(), cu_burgers.nextv)
 	
 	surface(
 		range(-3, 3, length=cu_burgers.nx-2),
 		range(-3, 3, length=cu_burgers.ny-2),
-		nextu[2:end-1, 2:end-1] .^ 2 .+ nextv[2:end-1, 2:end-1] .^2,
+		adapt(CPU(), velocity_magnitude(cu_burgers)),
 		xlabel = "x", ylabel = "y", c = color,
 	    legend=:none
 	)
@@ -2274,6 +2321,8 @@ version = "3.5.0+0"
 # ╟─feb5a4ce-f32e-4f72-94c9-a39460a6866e
 # ╠═d7df76fd-dbb3-43bd-a1a9-35b69cebcbcb
 # ╟─dd62122a-89c0-471a-97c1-5f3d60b98f40
+# ╟─ecc59af4-f6a5-4309-8255-133343e3e296
+# ╟─78eb10bd-8ea0-4746-b832-231d8fe8bce9
 # ╠═0dc72edd-d11c-4f71-baee-a5c265b2d135
 # ╟─75f0cbda-57f4-4232-93f8-a88ccd764d16
 # ╠═02e8e500-9785-436c-8e2c-d3455ab8eec3
@@ -2297,7 +2346,7 @@ version = "3.5.0+0"
 # ╟─998c6c9b-9f30-4ad2-b1ae-089f53d1bb92
 # ╠═c5feb1d9-4703-49a2-bedc-b996887f4d91
 # ╟─c072dbfe-4866-4fd6-94b6-069c2deb29d5
-# ╟─50c2b95a-9e72-48b9-879b-d31a70c0f6cb
+# ╠═50c2b95a-9e72-48b9-879b-d31a70c0f6cb
 # ╟─78e3b07f-f99a-4bfc-b42d-008c9417a14c
 # ╠═01549692-94ba-4119-b259-052be74fc4b0
 # ╟─c001200e-392e-4bd5-bf89-2b3b81e1a31f
@@ -2314,6 +2363,8 @@ version = "3.5.0+0"
 # ╠═06f23f52-0fcc-4707-b06c-80f4529b506d
 # ╠═8112d5d6-151c-4b40-ac85-450786dff438
 # ╠═f152117a-578c-451f-86ce-4acd1a669bfd
+# ╟─c81d0aff-fdaa-40c2-b78b-a89143bf401d
+# ╠═f061c0c1-5955-4e1b-888c-922dbae316b8
 # ╠═33c47fe9-6326-47df-8539-3999297298a9
 # ╟─3a4e997d-b002-4129-a69a-90bfe285f824
 # ╟─d90ca551-d0c9-4f6d-b061-82c978350d61
