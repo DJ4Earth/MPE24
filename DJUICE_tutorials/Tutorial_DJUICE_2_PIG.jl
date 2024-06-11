@@ -14,6 +14,7 @@ using InteractiveUtils
 using DJUICE
 
 # ╔═╡ 7ee597f0-fb53-4865-beee-3104b31c8ef3
+# ╠═╡ show_logs = false
 begin
 	using MAT
 	
@@ -48,7 +49,7 @@ end;
 md"""
 # Application of DJUICE: Pine Island Glacier
 
-In this tutorial, we will work on a real-world case: modeling the [Pine Island Glacier](https://en.wikipedia.org/wiki/Pine_Island_Glacier) in Antarctica. 
+In this tutorial, we will work on a real-world case: modeling the [Pine Island Glacier](https://en.wikipedia.org/wiki/Pine_Island_Glacier) in Antarctica. We are going to simulate the ice velocity using the ice geometry measured from satellites.
 """
 
 # ╔═╡ 8d952814-f4d6-49a1-a961-22e5a34c1aa8
@@ -176,7 +177,7 @@ MAT = "~0.10.7"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.3"
+julia_version = "1.10.4"
 manifest_format = "2.0"
 project_hash = "8088cb83089a444660f78ab18569c58c32fd77f9"
 
@@ -2384,9 +2385,9 @@ version = "3.5.0+0"
 # ╠═bf718cfd-140a-4a5a-8f91-22d7841b543f
 # ╟─1c0f009c-816b-4f3f-bd92-14c41e9651e9
 # ╠═2ac93dbd-f7d2-47f0-a68e-8ec9ff9438a1
-# ╠═a4871152-4810-486d-adef-02163f0a74b8
+# ╟─a4871152-4810-486d-adef-02163f0a74b8
 # ╠═4544078c-6ef5-48cb-bb03-81b7c1439fa4
 # ╠═be7e4edc-5f33-4414-87f0-253e40928e82
-# ╠═28ea699a-58e9-4b68-8ef7-5ec20c5db489
+# ╟─28ea699a-58e9-4b68-8ef7-5ec20c5db489
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

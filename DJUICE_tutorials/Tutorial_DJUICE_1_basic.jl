@@ -282,7 +282,7 @@ DJUICE = "~0.1.0"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.3"
+julia_version = "1.10.4"
 manifest_format = "2.0"
 project_hash = "d37c41cc5f5048d5df3aa7e96f105148d41e5313"
 
