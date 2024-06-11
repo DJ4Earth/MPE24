@@ -139,7 +139,7 @@ begin
 	u = XFaceField(grid)
 	v = YFaceField(grid)
 	
-	U = 2
+	U = 4
 	u₀(x, y, z) = - U * cos(x + π/4) * sin(y)
 	v₀(x, y, z) = + U * 0.5
 	
@@ -335,7 +335,7 @@ begin
 end
 
 # ╔═╡ 39555d5c-b20e-4058-a0d0-846723560fbb
-md"Lastly, we have plots of the initial and final ice thickness. There's a little melt along the egdes of the ice flow, shown by the slightly darker cells."
+md"Lastly, we have plots of the initial and final ice thickness. There's a little melt across the entire floe, particularly along the egdes of the ice flow where the cells are slightly darker."
 
 # ╔═╡ 843067f7-034f-4483-bcec-0b99af8b0862
 begin
@@ -398,12 +398,12 @@ begin
 	    J = 0.0
 		##
 	    for i = 1:Nx, j = 1:Ny, k = 1:Nz
-	        J += (T[i, j, k] - Tₙ[i, j, k])^2
+	        J += (T[i, j, k] - Tₙ[i, j, k])^2 / (Nx * Ny * Nz)
 	    end
 		##
 		##
 	    for i = 1:Nx, j = 1:Ny
-	        J += (h[i, j] - hₙ[i, j])^2
+	        J += (h[i, j] - hₙ[i, j])^2 / (Nx * Ny)
 	    end
 		##
 	    return J::Float64
@@ -524,7 +524,7 @@ begin
 end
 
 # ╔═╡ 0bfdd29e-6ab3-406c-9109-40422d059f74
-md"Here is the final ice thickness from our true results compared to the final ice derived from our inverse problem. Again, $J$ includes the squared error between these values so they look very similar:"
+md"Here is the final ice thickness from our true results compared to the final ice derived from our inverse problem. Again, $J$ includes the squared error between these values so they look similar, with extra melting along the edges."
 
 # ╔═╡ 222416ae-1aa0-4f48-9e8d-3aabc34e21dd
 begin
@@ -543,7 +543,13 @@ begin
 end
 
 # ╔═╡ 8ac54b9e-7a50-49ce-99ad-60244bb12c9d
-md"And the big test... how does our inverted-for initial temperature field compare to the true one? Note that these plots use the same temperature scales and colorbar. Although the exact temperatures are different, pretty much all of the features in our initial temperature field are represented in the inverted one. But there are a few clear errors too: for example, at greater depths there's a faint temperature oscillation that isn't present in the true data. Variance from the added noise to the initial condition might be approximated to an extent, but not closely."
+md"And the big test... how does our inverted-for initial temperature field compare to the true one? Note that these plots use the same temperature scales and colorbar. Although the exact temperatures are different, pretty much all of the features in our initial temperature field are represented in the inverted one. But there are a few clear errors too: for example, at greater depths there's a faint temperature oscillation that isn't present in the true data. Variance from the added noise to the initial condition might be approximated to an extent, but not closely. We can see the maximal value of $T_0$ (in magnitude) is much bigger than the maximal value of $T_i$:"
+
+# ╔═╡ 7939e343-ed67-4ea8-83be-691c994247e5
+maximum(abs.(T₀))
+
+# ╔═╡ d4a544fd-64a9-4aad-af25-d1a6d47eab76
+maximum(abs.(Tᵢ))
 
 # ╔═╡ 9915a338-69d2-4fac-98d0-737bdfa69543
 begin
@@ -593,7 +599,7 @@ But even with some limitations, this tutorial outlines a basic workflow for solv
 # ╟─9afd85ee-b9de-4629-b9a8-3ce6ea0f10db
 # ╟─3adeeda5-7db4-4d38-a0c4-2adee41c14e8
 # ╠═071a8881-0be3-4052-9c28-bc76057b6b5a
-# ╠═9637e4af-6176-490d-9c96-c2d3b2a7b32d
+# ╟─9637e4af-6176-490d-9c96-c2d3b2a7b32d
 # ╠═31ea7ca7-9e45-4722-9282-a636823f9a4e
 # ╠═a30d3476-fe00-4e2c-a786-8673a64bc8cf
 # ╟─1819e8b4-2902-4d43-95ea-e2748513ba6b
@@ -603,9 +609,9 @@ But even with some limitations, this tutorial outlines a basic workflow for solv
 # ╠═63f3f573-d12f-4c22-aeec-275c33750ab9
 # ╟─f8194371-97d4-45f4-8441-309bc535302c
 # ╠═fc39f605-9635-402d-b60a-1c8c15a82c89
-# ╠═62b3adee-63b0-4f05-b304-d1d8b0d40ef9
+# ╟─62b3adee-63b0-4f05-b304-d1d8b0d40ef9
 # ╠═7cc53014-2395-4357-bbbb-d2d7eff59e20
-# ╠═0b04432b-0e5d-4d99-9808-0a1ad7765f72
+# ╟─0b04432b-0e5d-4d99-9808-0a1ad7765f72
 # ╠═045b79be-be33-4f17-b142-5f5b82c9e1f1
 # ╟─023737b6-401f-4ebf-8295-a2d783400a40
 # ╟─042ee0ec-58b2-470d-84f5-302c87a88281
@@ -625,6 +631,8 @@ But even with some limitations, this tutorial outlines a basic workflow for solv
 # ╟─934fb784-be1b-4b9d-ae5e-57ad07a38cfd
 # ╟─0bfdd29e-6ab3-406c-9109-40422d059f74
 # ╟─222416ae-1aa0-4f48-9e8d-3aabc34e21dd
-# ╠═8ac54b9e-7a50-49ce-99ad-60244bb12c9d
+# ╟─8ac54b9e-7a50-49ce-99ad-60244bb12c9d
+# ╠═7939e343-ed67-4ea8-83be-691c994247e5
+# ╠═d4a544fd-64a9-4aad-af25-d1a6d47eab76
 # ╟─9915a338-69d2-4fac-98d0-737bdfa69543
 # ╟─ca0ca8a0-1692-4cc0-8726-26de146051b7
