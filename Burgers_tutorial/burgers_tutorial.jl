@@ -441,20 +441,6 @@ md"""
 Let's crank up the resolution and number of timesteps.
 """
 
-# ╔═╡ a9814ad4-7c9b-4c25-8fa4-b1683ad9be82
-begin
-	burgers_hd = Burgers(1000, 1000, μ, 1e-2, 1e-2, dt, 1000)
-	set_ic!(burgers_hd)
-	set_bc!(burgers_hd)
-	final_energy!(burgers_hd)
-	surface(
-		range(-3, 3, length=burgers_hd.nx-2),
-		range(-3, 3, length=burgers_hd.ny-2),
-		velocity_magnitude(burgers_hd);
-		axis=(type=Axis3,),
-	)
-end
-
 # ╔═╡ 9f411195-2312-4385-924e-9bacecfd7fd2
 md"""
 # Differentiating Burgers using Enzyme
@@ -484,12 +470,6 @@ surface(
 	axis=(type=Axis3,),
 )
 
-# ╔═╡ f152117a-578c-451f-86ce-4acd1a669bfd
-begin
-	dburgers = Enzyme.make_zero(deepcopy(burgers))
-	autodiff(ReverseWithPrimal, final_energy!, Active, Duplicated(burgers, dburgers))
-end
-
 # ╔═╡ c81d0aff-fdaa-40c2-b78b-a89143bf401d
 md""" We define the _adjoint velocity magnitude_ as $(dJ/du)^2 + (dJ/dv)^2$. Not that in the implementation we have to access the `last` field (input) as opposed to the `next` field (output) when computing the velocity magnitude."""
 
@@ -497,15 +477,6 @@ md""" We define the _adjoint velocity magnitude_ as $(dJ/du)^2 + (dJ/dv)^2$. Not
 function adjoint_velocity_magnitude(burgers)
 	burgers.lastu[2:end-1, 2:end-1] .^ 2 + burgers.lastv[2:end-1, 2:end-1] .^ 2
 end
-
-# ╔═╡ 33c47fe9-6326-47df-8539-3999297298a9
-begin
-surface(
-    range(-3, 3, length=dburgers.nx-2),
-    range(-3, 3, length=dburgers.ny-2),
-    dburgers.lastu[2:end-1, 2:end-1] .^ 2 + dburgers.lastv[2:end-1, 2:end-1] .^ 2;
-	axis=(type=Axis3,),
-)
 
 # ╔═╡ 3a4e997d-b002-4129-a69a-90bfe285f824
 md"""
@@ -546,34 +517,31 @@ fenergy = final_energy!(burgers)
 
 # ╔═╡ a9814ad4-7c9b-4c25-8fa4-b1683ad9be82
 begin
-burgers_hd = Burgers(1000, 1000, μ, 1e-2, 1e-2, dt, 1000)
-set_ic!(burgers_hd)
-set_bc!(burgers_hd)
-final_energy!(burgers_hd)
-surface(
-	range(-3, 3, length=burgers_hd.nx-2),
-	range(-3, 3, length=burgers_hd.ny-2),
-	velocity_magnitude(burgers_hd);xlabel = "x", ylabel = "y", c = color,
-    legend=:none
-)
+	burgers_hd = Burgers(1000, 1000, μ, 1e-2, 1e-2, dt, 1000)
+	set_ic!(burgers_hd)
+	set_bc!(burgers_hd)
+	final_energy!(burgers_hd)
+	surface(
+		range(-3, 3, length=burgers_hd.nx-2),
+		range(-3, 3, length=burgers_hd.ny-2),
+		velocity_magnitude(burgers_hd);
+		axis=(type=Axis3,),
+	)
 end
 
 # ╔═╡ f152117a-578c-451f-86ce-4acd1a669bfd
 begin
-dburgers = Enzyme.make_zero(deepcopy(burgers))
-autodiff(ReverseWithPrimal, final_energy!, Active, Duplicated(burgers, dburgers))
+	dburgers = Enzyme.make_zero(deepcopy(burgers))
+	autodiff(ReverseWithPrimal, final_energy!, Active, Duplicated(burgers, dburgers))
 end
 
 # ╔═╡ 33c47fe9-6326-47df-8539-3999297298a9
-begin
 surface(
     range(-3, 3, length=dburgers.nx-2),
     range(-3, 3, length=dburgers.ny-2),
-    adjoint_velocity_magnitude(dburgers);
-	xlabel = "x", ylabel = "y", c = color,
-    legend=:none
+    adjoint_velocity_magnitude(burgers);
+	axis=(type=Axis3,),
 )
-end
 
 # ╔═╡ d17ba6af-0ccc-4de5-9de5-9cefd4afa87c
 md"""
@@ -610,8 +578,6 @@ surface(
     range(-3, 3, length=burgers.ny-2),
     adjoint_velocity_magnitude(dburgers);
 	axis=(type=Axis3,),
-	xlabel = "x", ylabel = "y", c = color,
-    legend=:none
 )
 
 # ╔═╡ caaef553-35cc-4984-9dcd-bc057bb93cf2
@@ -634,8 +600,6 @@ surface(
     range(-3, 3, length=burgers_hd.ny-2),
 	adjoint_velocity_magnitude(dburgers_hd);
 	axis=(type=Axis3,),
-    xlabel = "x", ylabel = "y", c = color,
-    legend=:none, camera = (120, 30)
 )
 
 # ╔═╡ 871a7d07-2417-4e73-a9b9-5d7916edb167
@@ -687,8 +651,8 @@ PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 [compat]
 Adapt = "~4.0.4"
 CairoMakie = "~0.12.2"
-Checkpointing = "~0.9.3"
-Enzyme = "~0.12.11"
+Checkpointing = "~0.9.4"
+Enzyme = "~0.12.12"
 KernelAbstractions = "~0.9.20"
 PlutoUI = "~0.7.59"
 """
@@ -697,9 +661,9 @@ PlutoUI = "~0.7.59"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.3"
+julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "0bce539a8cc1549d013e3f241500f45a15a0bc5d"
+project_hash = "4da2ef4f56890d764db4da4b794bd809c459098a"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -835,9 +799,9 @@ weakdeps = ["SparseArrays"]
 
 [[deps.Checkpointing]]
 deps = ["ChainRulesCore", "DataStructures", "Enzyme", "HDF5", "LinearAlgebra", "Serialization"]
-git-tree-sha1 = "fbdfab0de3acb9095942c1f381d43a8ea6fced78"
+git-tree-sha1 = "fc899d226991468fad8ec922168b3536b1ee5026"
 uuid = "eb46d486-4f9c-4c3d-b445-a617f2a2f1ca"
-version = "0.9.3"
+version = "0.9.4"
 
 [[deps.ColorBrewer]]
 deps = ["Colors", "JSON", "Test"]
@@ -980,9 +944,9 @@ version = "1.0.4"
 
 [[deps.Enzyme]]
 deps = ["CEnum", "EnzymeCore", "Enzyme_jll", "GPUCompiler", "LLVM", "Libdl", "LinearAlgebra", "ObjectFile", "Preferences", "Printf", "Random"]
-git-tree-sha1 = "421556f232e54456bf1d11d4b9e74f6bb8261487"
+git-tree-sha1 = "75ea6a9c7be32536a3db7eb554de64e49fd14456"
 uuid = "7da242da-08ed-463a-9acd-ee780be4f1d9"
-version = "0.12.11"
+version = "0.12.12"
 weakdeps = ["ChainRulesCore", "SpecialFunctions", "StaticArrays"]
 
     [deps.Enzyme.extensions]
@@ -991,9 +955,9 @@ weakdeps = ["ChainRulesCore", "SpecialFunctions", "StaticArrays"]
     EnzymeStaticArraysExt = "StaticArrays"
 
 [[deps.EnzymeCore]]
-git-tree-sha1 = "0910982db2490a20f81dc7db5d4bbea236c027b3"
+git-tree-sha1 = "a2f4588bde1588af6279729540099895f8dee843"
 uuid = "f151be2c-9106-41f4-ab19-57ee4f262869"
-version = "0.7.3"
+version = "0.7.4"
 weakdeps = ["Adapt"]
 
     [deps.EnzymeCore.extensions]
@@ -1001,9 +965,9 @@ weakdeps = ["Adapt"]
 
 [[deps.Enzyme_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "a1ace5737c6c6fed5877a1980c0b8d873d1d2be7"
+git-tree-sha1 = "e3ece7b5fb991252abd138a2978e970063fc1412"
 uuid = "7cc45869-7501-5eee-bdea-0790c847d4ef"
-version = "0.0.119+0"
+version = "0.0.121+0"
 
 [[deps.ExactPredicates]]
 deps = ["IntervalArithmetic", "Random", "StaticArrays"]
@@ -1684,9 +1648,9 @@ version = "4.1.6+0"
 
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "3da7367955dcc5c54c1ba4d402ccdc09a1a3e046"
+git-tree-sha1 = "a028ee3cb5641cccc4c24e90c36b0a4f7707bdf5"
 uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
-version = "3.0.13+1"
+version = "3.0.14+0"
 
 [[deps.OpenSpecFun_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
