@@ -253,7 +253,7 @@ Enzyme offers two primary modes for computing derivatives. Forward-mode and Reve
 
 * Forward-Mode: Perform the shadow computation alongside and in the same order as the instructions in the original program. Propagate the derivative from the inputs to the outputs. Lets you compute the derivative of all outputs with respect to a single input.
 
-* Reverse-Mode: Perform the shadow computation in the opposite order as the instructions in the original program. Propagate the derivative from the outputs to the inputs. Lets you compute the derivative of all inputs with respect to a single output. 
+* Reverse-Mode: Perform the shadow computation in the opposite order as the instructions in the original program. Propagate the derivative from the outputs to the inputs. Lets you compute the derivative of a single output with respect to all inputs. 
   * More common in machine learning as it lets you take the gradient with respect to all input weights/biases in a single sweep.
 
 Let's make things more concrete for both of these modes with an example!
