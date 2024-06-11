@@ -539,7 +539,7 @@ end
 surface(
     range(-3, 3, length=dburgers.nx-2),
     range(-3, 3, length=dburgers.ny-2),
-    adjoint_velocity_magnitude(burgers);
+    adjoint_velocity_magnitude(dburgers);
 	axis=(type=Axis3,),
 )
 
