@@ -567,12 +567,12 @@ begin
 	)
 
 	# removing the halo from derivative prognostic variables
-	derivs = ShallowWaters.PrognosticVars{Float32}(ShallowWaters.remove_halo(dS.Prog.u,dS.Prog.v,dS.Prog.η,dS.Prog.sst, dS)...);
+	derivs = ShallowWaters.PrognosticVars{Float32}(ShallowWaters.remove_halo(dS.Prog.u,dS.Prog.v,dS.Prog.η,dS.Prog.sst, S)...);
 	
 end
 
 # ╔═╡ 464420e7-6ee5-4770-9300-cfc2c2b0af81
-maximum(derivs.u)
+
 
 # ╔═╡ e74aa3aa-b4e8-4065-ac24-14f650a08db4
 md"""
@@ -642,7 +642,7 @@ begin
     Const(revolve2)
 	)
 
-	derivs2 = ShallowWaters.PrognosticVars{Float32}(ShallowWaters.remove_halo(dS2.Prog.u,dS2.Prog.v,dS2.Prog.η,dS2.Prog.sst, dS2)...);
+	derivs2 = ShallowWaters.PrognosticVars{Float32}(ShallowWaters.remove_halo(dS2.Prog.u,dS2.Prog.v,dS2.Prog.η,dS2.Prog.sst,S2)...);
 
 end
 
