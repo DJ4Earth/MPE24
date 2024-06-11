@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.42
+# v0.19.40
 
 #> [frontmatter]
 #> title = "02 - Burgers Equation"
@@ -12,10 +12,14 @@
 using Markdown
 using InteractiveUtils
 
+# ╔═╡ 7d49ca87-60a6-48e9-949c-528bd5d315dc
+using HypertextLiteral
+
 # ╔═╡ bbe566f7-02b7-480b-bd63-d6c72aa1ac40
 begin
 	using KernelAbstractions
 	using Adapt
+	
 end
 
 # ╔═╡ d3ee06e0-41b1-4503-a3b4-881f0b1bee35
@@ -47,6 +51,22 @@ md"""
 \end{align}
 ```
 where $u$ and $v$ represent the $x$ and $y$ velocities of a fluid and $\nu$ is the viscosity coefficient.
+"""
+
+# ╔═╡ 518bea85-55b2-4bf3-9b59-890e32724bf7
+@htl """
+<style>
+pluto-cell {
+	display: flex;
+	flex-direction: column;
+}
+pluto-cell pluto-output {
+	order: 1;
+}
+pluto-cell pluto-runarea {
+	bottom: -17px;
+}
+</style>
 """
 
 # ╔═╡ db83cf1f-2946-4392-909f-ab96e4613260
@@ -645,14 +665,16 @@ Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Checkpointing = "eb46d486-4f9c-4c3d-b445-a617f2a2f1ca"
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
+HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 
 [compat]
 Adapt = "~4.0.4"
 CairoMakie = "~0.12.2"
-Checkpointing = "~0.9.4"
+Checkpointing = "~0.9.3"
 Enzyme = "~0.12.12"
+HypertextLiteral = "~0.9.5"
 KernelAbstractions = "~0.9.20"
 PlutoUI = "~0.7.59"
 """
@@ -663,7 +685,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "4da2ef4f56890d764db4da4b794bd809c459098a"
+project_hash = "14708f6ea11412bb8ccaba2800ba809319433f13"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -757,6 +779,12 @@ version = "0.5.0"
 [[deps.CRC32c]]
 uuid = "8bf52ea8-c179-5cab-976a-9e18b702a9bc"
 
+[[deps.CRlibm]]
+deps = ["CRlibm_jll"]
+git-tree-sha1 = "32abd86e3c2025db5172aa182b982debed519834"
+uuid = "96374032-68de-5a5b-8d9e-752f78720389"
+version = "1.0.1"
+
 [[deps.CRlibm_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "e329286945d0cfc04456972ea732551869af1cfc"
@@ -799,9 +827,9 @@ weakdeps = ["SparseArrays"]
 
 [[deps.Checkpointing]]
 deps = ["ChainRulesCore", "DataStructures", "Enzyme", "HDF5", "LinearAlgebra", "Serialization"]
-git-tree-sha1 = "fc899d226991468fad8ec922168b3536b1ee5026"
+git-tree-sha1 = "fbdfab0de3acb9095942c1f381d43a8ea6fced78"
 uuid = "eb46d486-4f9c-4c3d-b445-a617f2a2f1ca"
-version = "0.9.4"
+version = "0.9.3"
 
 [[deps.ColorBrewer]]
 deps = ["Colors", "JSON", "Test"]
@@ -969,6 +997,11 @@ git-tree-sha1 = "e3ece7b5fb991252abd138a2978e970063fc1412"
 uuid = "7cc45869-7501-5eee-bdea-0790c847d4ef"
 version = "0.0.121+0"
 
+[[deps.ErrorfreeArithmetic]]
+git-tree-sha1 = "d6863c556f1142a061532e79f611aa46be201686"
+uuid = "90fa49ef-747e-5e6f-a989-263ba693cf1a"
+version = "0.5.2"
+
 [[deps.ExactPredicates]]
 deps = ["IntervalArithmetic", "Random", "StaticArrays"]
 git-tree-sha1 = "b3f2ff58735b5f024c392fde763f29b057e4b025"
@@ -1008,6 +1041,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "c6033cc3892d0ef5bb9cd29b7f2f0331ea5184ea"
 uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
 version = "3.3.10+0"
+
+[[deps.FastRounding]]
+deps = ["ErrorfreeArithmetic", "LinearAlgebra"]
+git-tree-sha1 = "6344aa18f654196be82e62816935225b3b9abe44"
+uuid = "fa42c844-2597-5d31-933b-ebd51ab2693f"
+version = "0.3.1"
 
 [[deps.FileIO]]
 deps = ["Pkg", "Requires", "UUIDs"]
@@ -1257,35 +1296,21 @@ weakdeps = ["Unitful"]
     InterpolationsUnitfulExt = "Unitful"
 
 [[deps.IntervalArithmetic]]
-deps = ["CRlibm_jll", "MacroTools", "RoundingEmulator"]
-git-tree-sha1 = "433b0bb201cd76cb087b017e49244f10394ebe9c"
+deps = ["CRlibm", "EnumX", "FastRounding", "LinearAlgebra", "Markdown", "Random", "RecipesBase", "RoundingEmulator", "SetRounding", "StaticArrays"]
+git-tree-sha1 = "f59e639916283c1d2e106d2b00910b50f4dab76c"
 uuid = "d1acc4aa-44c8-5952-acd4-ba5d80a2a253"
-version = "0.22.14"
-
-    [deps.IntervalArithmetic.extensions]
-    IntervalArithmeticDiffRulesExt = "DiffRules"
-    IntervalArithmeticForwardDiffExt = "ForwardDiff"
-    IntervalArithmeticRecipesBaseExt = "RecipesBase"
-
-    [deps.IntervalArithmetic.weakdeps]
-    DiffRules = "b552c78f-8df3-52c6-915a-8e097449b14b"
-    ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
-    RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+version = "0.21.2"
 
 [[deps.IntervalSets]]
 git-tree-sha1 = "dba9ddf07f77f60450fe5d2e2beb9854d9a49bd0"
 uuid = "8197267c-284f-5f27-9208-e0e47529a953"
 version = "0.7.10"
+weakdeps = ["Random", "RecipesBase", "Statistics"]
 
     [deps.IntervalSets.extensions]
     IntervalSetsRandomExt = "Random"
     IntervalSetsRecipesBaseExt = "RecipesBase"
     IntervalSetsStatisticsExt = "Statistics"
-
-    [deps.IntervalSets.weakdeps]
-    Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-    RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
-    Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "630b497eafcc20001bba38a4651b327dcfc491d2"
@@ -1806,6 +1831,12 @@ weakdeps = ["FixedPointNumbers"]
     [deps.Ratios.extensions]
     RatiosFixedPointNumbersExt = "FixedPointNumbers"
 
+[[deps.RecipesBase]]
+deps = ["PrecompileTools"]
+git-tree-sha1 = "5c3d09cc4f31f5fc6af001c250bf1278733100ff"
+uuid = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+version = "1.3.4"
+
 [[deps.Reexport]]
 git-tree-sha1 = "45e428421666073eab6f2da5c9d310d99bb12f9b"
 uuid = "189a3867-3050-52da-a836-e630ba90ab69"
@@ -1858,6 +1889,11 @@ version = "1.2.1"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+
+[[deps.SetRounding]]
+git-tree-sha1 = "d7a25e439d07a17b7cdf97eecee504c50fedf5f6"
+uuid = "3cc68bcd-71a2-5612-b932-767ffbe40ab0"
+version = "0.2.1"
 
 [[deps.ShaderAbstractions]]
 deps = ["ColorTypes", "FixedPointNumbers", "GeometryBasics", "LinearAlgebra", "Observables", "StaticArrays", "StructArrays", "Tables"]
@@ -2264,6 +2300,8 @@ version = "3.5.0+0"
 
 # ╔═╡ Cell order:
 # ╟─a575949c-2368-11ef-2b2d-2fe3a2ffbae3
+# ╟─7d49ca87-60a6-48e9-949c-528bd5d315dc
+# ╟─518bea85-55b2-4bf3-9b59-890e32724bf7
 # ╟─db83cf1f-2946-4392-909f-ab96e4613260
 # ╠═bbe566f7-02b7-480b-bd63-d6c72aa1ac40
 # ╟─d25fc2f9-7b5c-4a23-8c21-98322eff3bf0
