@@ -34,11 +34,11 @@ begin
 	WGLMakie.activate!()
 end
 
+# ╔═╡ ac379b14-de26-43b0-bf29-df8764430683
+using Optim
+
 # ╔═╡ 05267988-ff9d-4e60-9a10-55864390fd22
 using Enzyme
-
-# ╔═╡ 07df2151-525e-4fdd-a66a-db211bf02932
-using Optim
 
 # ╔═╡ 1195dec8-2d9b-4bae-a2b6-c0835ad6e27b
 begin
@@ -179,6 +179,14 @@ surface(xs, ys, zs, axis=(type=Axis3,))
 # ╔═╡ efd6eb23-be46-437e-9c87-a6f770dc3613
 contourf(xs, ys, zs)
 
+# ╔═╡ 44b65bb0-cf1b-41c0-b792-01f5e5e9022d
+let
+	f(x) = rosenbrock(x...)
+	sol = optimize(f, [0.0, 0.0])
+	@show Optim.minimizer(sol)
+	sol
+end
+
 # ╔═╡ 12d80cd2-542b-4844-8957-9337640a84c2
 md"""
 ## Automatic differentiation 📈
@@ -218,11 +226,14 @@ We can ask Enzyme to compute the partial derivative on the second argument:
 # ╔═╡ 415df7a4-a127-4cb6-a7fc-132a83883474
 ∂f(f, x, y) = first(autodiff(Enzyme.Reverse, f, Active(x), Active(y)));
 
-# ╔═╡ 174d5b15-743c-4a0b-a49c-020315e2f601
-∂f_∂y(rosenbrock, 0.0, 1.0)
-
 # ╔═╡ b85ec6d8-735f-49ab-b9d5-dccf76754335
 ∂f_∂x(rosenbrock, 1.0, 0.0)
+
+# ╔═╡ 0676ecd3-41ff-43f5-865c-1681591d5fcf
+∂f_∂x(rosenbrock, 0.0, 1.0)
+
+# ╔═╡ b1c40c2a-6c6c-457a-ad27-a73b8bdffa78
+∂f_∂y(rosenbrock, 0.0, 1.0)
 
 # ╔═╡ 9d9c6b7f-a73b-4e39-812f-00d30ab3c201
 ∂f(rosenbrock, 0.0, 1.0)
@@ -234,24 +245,18 @@ contourf(xs, ys, ((x,y)->∂f_∂x(rosenbrock, x, y)[1]).(xs, ys'))
 contourf(xs, ys, ((x,y)->∂f_∂y(rosenbrock, x, y)[2]).(xs, ys'))
 
 # ╔═╡ 8f9294c6-172e-41d9-83b8-93991a7a989a
-Enzyme.Compiler.enzyme_code_llvm(stdout, 
+with_terminal() do
+Enzyme.Compiler.enzyme_code_llvm( 
 	rosenbrock, Active, Tuple{Const{Float64}, Active{Float64}},
 	debuginfo=:none)
-
-# ╔═╡ 950b361d-c603-49bd-8e0f-ab49971db1a0
-let
-	f(x) = rosenbrock(x...)
-	sol = optimize(f, [0.0, 0.0])
-	@show Optim.minimizer(sol)
-	sol
 end
 
 # ╔═╡ ecc9581f-4efc-408c-832a-ac33b2392d55
 let
 	f(x) = rosenbrock(x[1], x[2])
-	function g!(storage, x)
-		fill!(storage, 0)
-		autodiff(Enzyme.Reverse, f, Duplicated(x, storage))
+	function g!(dx, x)
+		fill!(dx, 0)
+		autodiff(Enzyme.Reverse, f, Duplicated(x, dx))
 		nothing
 	end
 	sol = optimize(f, g!, [0.0, 0.0])
@@ -2114,22 +2119,23 @@ version = "3.5.0+0"
 # ╠═92b71ff8-0dc5-481c-9d05-19d3db73cbcc
 # ╠═81bd99c3-3e38-4fff-83af-37faa014429f
 # ╠═efd6eb23-be46-437e-9c87-a6f770dc3613
+# ╠═ac379b14-de26-43b0-bf29-df8764430683
+# ╠═44b65bb0-cf1b-41c0-b792-01f5e5e9022d
 # ╟─12d80cd2-542b-4844-8957-9337640a84c2
 # ╟─7553f962-90fc-4ec2-892f-f73b300e0850
 # ╠═05267988-ff9d-4e60-9a10-55864390fd22
 # ╠═6f87e98a-3767-4c5e-a24f-f9cb0698346b
 # ╠═8bde3cd7-32c5-4d21-ba13-34d63bc143b5
 # ╠═415df7a4-a127-4cb6-a7fc-132a83883474
-# ╠═174d5b15-743c-4a0b-a49c-020315e2f601
 # ╠═b85ec6d8-735f-49ab-b9d5-dccf76754335
+# ╠═0676ecd3-41ff-43f5-865c-1681591d5fcf
+# ╠═b1c40c2a-6c6c-457a-ad27-a73b8bdffa78
 # ╠═9d9c6b7f-a73b-4e39-812f-00d30ab3c201
 # ╠═fafcf585-4f4e-4f2d-89a1-8f410a683754
 # ╠═99f8f148-5c6c-436e-a2e7-a69ad3c1bdbe
 # ╠═8f9294c6-172e-41d9-83b8-93991a7a989a
-# ╠═07df2151-525e-4fdd-a66a-db211bf02932
-# ╠═950b361d-c603-49bd-8e0f-ab49971db1a0
 # ╠═ecc9581f-4efc-408c-832a-ac33b2392d55
-# ╠═0b26e518-9fd5-46db-9a80-78c0a3fe0f62
+# ╟─0b26e518-9fd5-46db-9a80-78c0a3fe0f62
 # ╠═37ba14ea-caf3-4d7f-81a3-a46e13c5042c
 # ╟─b4e65db8-3256-440a-9723-b5360f054a7d
 # ╠═175a1bb0-926c-4aac-9da1-0c09ec1cce53
