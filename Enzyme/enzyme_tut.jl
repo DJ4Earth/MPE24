@@ -6,6 +6,8 @@
 #> 
 #>     [[frontmatter.author]]
 #>     name = "William S. Moses"
+#>     affiliation = "University of Illinois Urbana Champaign"
+#>     url = "https://wsmoses.com"
 
 using Markdown
 using InteractiveUtils
