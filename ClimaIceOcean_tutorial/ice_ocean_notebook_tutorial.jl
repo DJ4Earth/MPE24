@@ -398,12 +398,12 @@ begin
 	    J = 0.0
 		##
 	    for i = 1:Nx, j = 1:Ny, k = 1:Nz
-	        J += (T[i, j, k] - Tₙ[i, j, k])^2 / (Nx * Ny * Nz)
+	        J += (T[i, j, k] - Tₙ[i, j, k])^2
 	    end
 		##
 		##
 	    for i = 1:Nx, j = 1:Ny
-	        J += (h[i, j] - hₙ[i, j])^2 / (Nx * Ny)
+	        J += (h[i, j] - hₙ[i, j])^2
 	    end
 		##
 	    return J::Float64
@@ -545,10 +545,10 @@ end
 # ╔═╡ 8ac54b9e-7a50-49ce-99ad-60244bb12c9d
 md"And the big test... how does our inverted-for initial temperature field compare to the true one? Note that these plots use the same temperature scales and colorbar. Although the exact temperatures are different, pretty much all of the features in our initial temperature field are represented in the inverted one. But there are a few clear errors too: for example, at greater depths there's a faint temperature oscillation that isn't present in the true data. Variance from the added noise to the initial condition might be approximated to an extent, but not closely. We can see the maximal value of $T_0$ (in magnitude) is much bigger than the maximal value of $T_i$:"
 
-# ╔═╡ 7939e343-ed67-4ea8-83be-691c994247e5
+# ╔═╡ 4b3b9f56-f8b6-47f9-9298-0c43cb09d534
 maximum(abs.(T₀))
 
-# ╔═╡ d4a544fd-64a9-4aad-af25-d1a6d47eab76
+# ╔═╡ 10c8f386-5e43-4c2f-aadd-d0e342fe520d
 maximum(abs.(Tᵢ))
 
 # ╔═╡ 9915a338-69d2-4fac-98d0-737bdfa69543
@@ -632,7 +632,7 @@ But even with some limitations, this tutorial outlines a basic workflow for solv
 # ╟─0bfdd29e-6ab3-406c-9109-40422d059f74
 # ╟─222416ae-1aa0-4f48-9e8d-3aabc34e21dd
 # ╟─8ac54b9e-7a50-49ce-99ad-60244bb12c9d
-# ╠═7939e343-ed67-4ea8-83be-691c994247e5
-# ╠═d4a544fd-64a9-4aad-af25-d1a6d47eab76
+# ╠═4b3b9f56-f8b6-47f9-9298-0c43cb09d534
+# ╠═10c8f386-5e43-4c2f-aadd-d0e342fe520d
 # ╟─9915a338-69d2-4fac-98d0-737bdfa69543
 # ╟─ca0ca8a0-1692-4cc0-8726-26de146051b7
