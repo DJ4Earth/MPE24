@@ -552,7 +552,7 @@ surface(
     range(-3, 3, length=dburgers.nx-2),
     range(-3, 3, length=dburgers.ny-2),
     adjoint_velocity_magnitude_sq(dburgers);
-	axis=(type=Axis3, azimuth = -pi/4,),
+	axis=(type=Axis3,),
 )
 
 # ╔═╡ d17ba6af-0ccc-4de5-9de5-9cefd4afa87c
@@ -2298,7 +2298,7 @@ version = "3.5.0+0"
 # ╟─12dfa763-b307-4f76-9a0d-5b24e6130da9
 # ╠═64b6eca3-8b8a-470c-b496-8207d88fb99c
 # ╠═96a54adb-015c-4243-a99d-9cda695f2a4d
-# ╠═e14d9a22-4d55-4e66-8a63-8fdccd0c6d27
+# ╟─e14d9a22-4d55-4e66-8a63-8fdccd0c6d27
 # ╠═48b5e47b-e090-401d-ad7a-4898874b5117
 # ╟─3843e17d-7eb0-4b15-a1d8-ca7e0eaefd8d
 # ╠═de82b316-f8b9-479d-acac-dd18768e1e43
