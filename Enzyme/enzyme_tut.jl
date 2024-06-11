@@ -1,6 +1,12 @@
 ### A Pluto.jl notebook ###
 # v0.19.42
 
+#> [frontmatter]
+#> title = "Introduction to Automatic Differentiation in Enzyme"
+#> 
+#>     [[frontmatter.author]]
+#>     name = "William S. Moses"
+
 using Markdown
 using InteractiveUtils
 
