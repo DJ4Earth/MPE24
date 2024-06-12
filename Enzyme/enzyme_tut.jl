@@ -329,12 +329,12 @@ What about mulitiply?
 
 
 ```math
-(a + b \epsilon) * (c + d \epsilon) = ab + (ad + bc) \epsilon + bd \epsilon^2
+(a + b \epsilon) * (c + d \epsilon) = ac + (ad + bc) \epsilon + bd \epsilon^2
 ```
 
 Here we find three terms going all the way up to epsilon^2. However, since we know epsilon << 1, we can cut it off and find the final result of
 ```math
-ab + (ad + bc) \epsilon
+ac + (ad + bc) \epsilon
 ```.
 
 Enzyme implements these rules or all the primitive LLVM instructions. By implementing the derivative rule for all these instructions, one can apply the chain rule between them to find the total derivative of a computation. Let's see how it works in practice.
