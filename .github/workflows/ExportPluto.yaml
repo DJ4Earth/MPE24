@@ -70,7 +70,6 @@ jobs:
                     Export_baked_notebookfile=false,
                     Export_baked_state=false,
                     Export_create_pluto_featured_index=true,
-                    Export_binder_url="https://mybinder.org/v2/gh/DJ4Earth/MPE24/main"
                     # more parameters can go here
                   )'
 
