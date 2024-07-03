@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.42
+# v0.19.43
 
 #> [frontmatter]
 #> title = "02 - Burgers Equation"
