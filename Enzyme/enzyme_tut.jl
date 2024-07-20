@@ -36,7 +36,7 @@ md"""
 Derivatives compute the rate of change of a function’s output with respect to input(s)
 
 ```math
-f'(x) = \lim_{h\rightarrow 0} \frac{f(a+h)-f(a)}{h}
+f'(x) \coloneqq \lim_{h\rightarrow 0} \frac{f(x+h)-f(x)}{h}
 ```
 
 Derivatives (& generalizations like gradients) used widely across science
@@ -76,14 +76,14 @@ end
 
 # ╔═╡ 651ab7be-2f87-4112-8304-ac8ecfbda5ff
 md"""
-One could alternatively numerically approximate the derivatives by subtracting applying the formula from the top at a small value of h (also referred to as epsilon).
+Alternatively, One could numerically approximate the derivatives by applying the formula from the top with a small value of h (also referred to as epsilon).
 
 for our relu function we might do something like the following
 """
 
 # ╔═╡ 19f2b988-2780-11ef-09c9-675188aabe39
 function finite_diff(f, x, h)
-  return (f(x+h) - f(x) ) / h
+  return (f(x+h) - f(x)) / h
 end
 
 # ╔═╡ 13abf071-166d-4d5d-8f8d-bb8da95def01
@@ -110,7 +110,7 @@ end
 md"""
 Finite differences seems to work decently well here, why use automatic differentiation?
 
-Let's try a function with more inputs, and take the entire gradient (e.g. derivative wrt all inputs.)
+Let's try a function with more inputs and take the entire gradient (i.e. derivative wrt all inputs.)
 """
 
 # ╔═╡ 63d9f6bc-4b65-4717-8d37-85e6f96dc4a3
@@ -173,7 +173,7 @@ grad_big_fd(inputs, 0.01)
 
 # ╔═╡ 87d08aad-18cc-4bbd-b8ca-644e4a01e8d2
 md"""
-That's a bit better, and also makes sense since the derivative is the limit as h approaches 0. So we'll always have some theoretical error if h is non-zero. Let's make h as close to 0 as possible, and see if we can get almost the same anwer!
+That's a bit better. It makes sense, since the derivative is the limit as h approaches 0. So we'd expect some theoretical error if h is non-zero. Let's make h as close to 0 as possible, and see if we can get almost the same answer!
 """
 
 # ╔═╡ 7336d600-4d66-4d65-a2cc-f4192ec10507
@@ -181,11 +181,11 @@ grad_big_fd(inputs, 1e-15)
 
 # ╔═╡ 5e14790e-3ee9-4865-95df-9f0454a62c5b
 md"""
-Uh oh the errors got worse! At one point, you'll get correctness issues due to floating point error. Computers don't represent real numbers to perfect accuracy, but instead represent things in a form of scientific notation 1.23456 * 10^3. The computer only has so many bits for the "matissa" aka the left hand side.
+Uh oh the errors got worse! At one point, you'll get correctness issues due to floating point error. Computers don't represent real numbers to perfect accuracy, but instead represent things in a form of scientific notation 1.23456 * 10^3. The computer only has so many bits for the "mantissa" aka the left hand side.
 
 What we're doing with our approximation is essentially computing (A + df) - A. As A gets really big compared to df, we lose most of the precision of our numbers!
 
-For example, lets suppose we only have 9 digits of precision.
+For example, let's suppose we only have 9 digits of precision.
 
 ```
 A       =  100,000,000.0
@@ -298,7 +298,7 @@ md"""
 One way of thinking about forward mode automatic differentiation is through the lens of dual numbers.
 
 
-Consider a taylor series for `f(x)`. `f'(x)` is the epsilon coefficient. 
+Consider a Taylor series for `f(x)`. `f'(x)` is the epsilon coefficient. 
 
 ```math
 f(x+\epsilon) = f(x) + f'(x) \epsilon + f''(x) \epsilon^2 + ...
@@ -325,7 +325,7 @@ Let's try add. Let's take two dual numbers and add them up.
 (a + b \epsilon) + (c + d \epsilon) = (a + c) + (b + d)\epsilon
 ```
 
-What about mulitiply?
+What about multiply?
 
 
 ```math
@@ -337,7 +337,7 @@ Here we find three terms going all the way up to epsilon^2. However, since we kn
 ac + (ad + bc) \epsilon
 ```.
 
-Enzyme implements these rules or all the primitive LLVM instructions. By implementing the derivative rule for all these instructions, one can apply the chain rule between them to find the total derivative of a computation. Let's see how it works in practice.
+Enzyme implements these rules for all the primitive LLVM instructions. By implementing the derivative rule for all these instructions, one can apply the chain rule between them to find the total derivative of a computation. Let's see how it works in practice.
 """
 
 # ╔═╡ 738fa258-8fe8-472a-b36d-e78b095b5a77
@@ -474,7 +474,7 @@ end
 md"""
 Reverse mode is often the more common way that automatic differentiation is used in practice.
 
-Rather than derivatives flowing from input to output as we saw in forward mode, in reverse mode derivatives from from differentiable result to differentiable input (as the name would imply).
+Rather than derivatives flowing from input to output as we saw in forward mode, in reverse mode derivatives from differentiable result to differentiable input (as the name would imply).
 
 A reverse-mode AD algorithm would often:
 1) Initialize the derivative result to 1 (e.g. marking the derivative of the result with respect to itself as 1).
@@ -484,7 +484,7 @@ A reverse-mode AD algorithm would often:
 
 The reason for the added complexity of reverse-mode is two-fold:
 * First, one must execute the program backwards. For programs with loops, branching, or nontrivial control flow, setting up this infrastructure may be non-trivial. 
-* Second, unlike forward mode where the derivative is immediately available upon executing the shadow instruction, in reverse  mode we add up all the partial derivatives. This is because if a variable is used multiple times, we can get multiple terms to the derivative from the partials of each of its users.
+* Second, derivatives wrt input variables are accumulated (`+=`), rather than assigned (like forward-mode). This is because the derivative wrt to a variable that gets used multiple times is the sum of derivative contributions from each of its users.
 
 Let's look at our simple_mlp example, but do it by hand this time.
 """
@@ -532,7 +532,7 @@ Enzyme.autodiff(Reverse, simple_mlp, Active, Active(3.0), Active(2.0), Active(4.
 md"""
 We got the same answers, great!
 
-But what is this new `Active` annotation. It is only available and reverse mode and refers to a differentiable variable which is immutable. As a result the autodiff function will return a tuple of the derivatives of all active variables. Or, more specifically, the first element of its return will be such a tuple.
+But what is this new `Active` annotation. It is only available in reverse mode and refers to a differentiable variable which is immutable. As a result the autodiff function will return a tuple of the derivatives of all active variables. Or, more specifically, the first element of its return will be such a tuple.
 
 You can also ask Enzyme to return both the derivative and the original result (also known as the primal), like below.
 """
@@ -580,7 +580,7 @@ end
 md"""
 Here we now need to also pass Enzyme a shadow return value, but what values should it be?
 
-For differentiable inputs we passed in 0's since the derivativess will be +='d into it.
+For differentiable inputs we passed in 0's since the derivatives will be +='d into it.
 
 For differentiable outputs, we will pass in the partial derivative we want to propagate backwards from it. If we simply want the derivative of out[1], let's set it to 1.0.
 """
@@ -616,9 +616,9 @@ end
 # ╔═╡ def31b91-7492-457e-9505-9927f69931c3
 begin
 	x_ip = [1.7]
-	dx_ip = [1.0]
-	autodiff(Reverse, sin_inplace, Duplicated(x_ip, dx_ip))
-	dx_ip
+	d_dx_ip = [1.0]
+	autodiff(Reverse, sin_inplace, Duplicated(x_ip, d_dx_ip))
+	d_dx_ip
 end
 
 # ╔═╡ b4819762-7c61-466d-8046-9c968a9d4150
@@ -632,16 +632,16 @@ Like forward mode we can generalize the equation of what reverse mode computes.
 
 Suppose our function `f(x, y, z)` returns 3 variables `f1`, `f2`, and `f3`.
 
-Supposing that we had intiialized shadow returns `df1`, `df2`, and `df3`, reverse mode will compute:
+Supposing that we had intiialized shadow returns `d_df1`, `d_df2`, and `d_df3`, reverse mode will compute:
 
 ```math
-dx += \nabla_x f1(x, y, z) * df1 + \nabla_x f2(x, y, z) * df2 + \nabla_x f3(x, y, z) * df3
+d_dx += \nabla_x f1(x, y, z) * d_df1 + \nabla_x f2(x, y, z) * d_df2 + \nabla_x f3(x, y, z) * d_df3
 ```
 ```math
-dy += \nabla_y f1(x, y, z) * df1 + \nabla_y f2(x, y, z) * df2 + \nabla_y f3(x, y, z) * df3
+d_dy += \nabla_y f1(x, y, z) * d_df1 + \nabla_y f2(x, y, z) * d_df2 + \nabla_y f3(x, y, z) * d_df3
 ```
 ```math
-dz += \nabla_z f1(x, y, z) * df1 + \nabla_z f2(x, y, z) * df2 + \nabla_z f3(x, y, z) * df3
+d_dz += \nabla_z f1(x, y, z) * d_df1 + \nabla_z f2(x, y, z) * d_df2 + \nabla_z f3(x, y, z) * d_df3
 ```
 
 Similarly, Reverse mode is often referred to as computing a vector jacobian product by the literature/other tools.
@@ -790,7 +790,7 @@ Reverse-Mode Automatic Differentiation and Optimization of GPU Kernels via Enzym
 $(LocalResource("./gpu.png"))
 
 ### Multicore Benchmarks
-This also applies to multicore/multi node paralleism as well. The blue lines in this plot denotes the performance of an application as it is scaled with multiple threads (up to 64). The green lines denote the performance of the gradient. On the left plot, standard optimizations (but no novel parallel optimizations) are applied. We see that the performance steadies out after around ~10 threads. On the right hand side, we now apply parallel optimizations prior to AD. We see that the performance continues to scale similarly to that of the original computation, subject to a hiccup at 32-threads (the machine has two distinct CPU sockets, each which 32 threads, so after 32 threads one needs to coordinate across sockets).
+This also applies to multicore/multi node parallelism as well. The blue lines in this plot denotes the performance of an application as it is scaled with multiple threads (up to 64). The green lines denote the performance of the gradient. On the left plot, standard optimizations (but no novel parallel optimizations) are applied. We see that the performance steadies out after around ~10 threads. On the right hand side, we now apply parallel optimizations prior to AD. We see that the performance continues to scale similarly to that of the original computation, subject to a hiccup at 32-threads (the machine has two distinct CPU sockets, each which 32 threads, so after 32 threads one needs to coordinate across sockets).
 
 This chart is from
 ```
