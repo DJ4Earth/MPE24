@@ -76,7 +76,7 @@ end
 
 # ╔═╡ 651ab7be-2f87-4112-8304-ac8ecfbda5ff
 md"""
-Alternatively, One could numerically approximate the derivatives by applying the formula from the top with a small value of h (also referred to as epsilon).
+Alternatively, one could numerically approximate the derivatives by applying the formula from the top with a small value of h (also referred to as epsilon).
 
 for our relu function we might do something like the following
 """
