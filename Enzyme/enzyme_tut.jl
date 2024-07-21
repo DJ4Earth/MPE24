@@ -110,7 +110,7 @@ end
 md"""
 Finite differences seems to work decently well here, why use automatic differentiation?
 
-Let's try a function with more inputs and take the entire gradient (i.e. derivative wrt all inputs.)
+Let's try a function with more inputs and take the entire gradient (i.e. derivative with respect to all inputs.)
 """
 
 # ╔═╡ 63d9f6bc-4b65-4717-8d37-85e6f96dc4a3
@@ -484,7 +484,7 @@ A reverse-mode AD algorithm would often:
 
 The reason for the added complexity of reverse-mode is two-fold:
 * First, one must execute the program backwards. For programs with loops, branching, or nontrivial control flow, setting up this infrastructure may be non-trivial. 
-* Second, derivatives wrt input variables are accumulated (`+=`), rather than assigned (like forward-mode). This is because the derivative wrt to a variable that gets used multiple times is the sum of derivative contributions from each of its users.
+* Second, derivatives with respect to input variables are accumulated (`+=`). This is because the derivative with respect to to a variable that gets used multiple times is the sum of derivative contributions from each of its users.
 
 Let's look at our simple_mlp example, but do it by hand this time.
 """
